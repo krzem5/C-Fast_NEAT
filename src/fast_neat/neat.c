@@ -116,6 +116,18 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 
 
 
+void neat_deinit(const neat_t* neat){
+	const neat_genome_t* genome=neat->genomes;
+	for (unsigned int i=0;i<neat->population;i++){
+		free(genome->nodes);
+		free(genome->edges);
+		genome++;
+	}
+	free(neat->genomes);
+}
+
+
+
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
 	for (unsigned int i=0;i<neat->input_count;i++){
 		(genome->nodes+i)->value=*in;

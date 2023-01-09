@@ -20,5 +20,6 @@ int main(void){
 		}
 	}
 	example->end_callback(&neat,best);
+	neat_deinit(&neat);
 	return 0;
 }

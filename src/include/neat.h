@@ -51,6 +51,10 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 
 
 
+void neat_deinit(const neat_t* neat);
+
+
+
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out);
 
 
