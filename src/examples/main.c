@@ -1,6 +1,7 @@
 #include <example.h>
 #include <neat.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -42,4 +43,10 @@ const example_t* example_get(const char* name){
 		out++;
 	}
 	return NULL;
+}
+
+
+
+float example_random_uniform(float min,float max){
+	return min+(max-min)*rand()/RAND_MAX;
 }

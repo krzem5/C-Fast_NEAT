@@ -1,3 +1,4 @@
+#include <example.h>
 #include <math.h>
 #include <neat.h>
 #include <stdio.h>
@@ -13,14 +14,15 @@
 #define TAU 0.02f
 #define MAX_X_VALUE 2.4f
 #define MAX_THETA_VALUE 0.2094f
+#define MAX_START_VALUE 0.05f
 
 
 
 float cartpole_fitness_score_callback(const neat_t* neat,const neat_genome_t* genome){
-	float x=0.05f;
-	float x_dot=0.00f;
-	float theta=0.0f;
-	float theta_dot=0.0f;
+	float x=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
+	float x_dot=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
+	float theta=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
+	float theta_dot=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
 	float genome_in[4];
 	float genome_out;
 	unsigned int i=0;
@@ -48,10 +50,10 @@ float cartpole_fitness_score_callback(const neat_t* neat,const neat_genome_t* ge
 
 
 void cartpole_end_callback(const neat_t* neat,const neat_genome_t* genome){
-	float x=0.05f;
-	float x_dot=0.00f;
-	float theta=0.0f;
-	float theta_dot=0.0f;
+	float x=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
+	float x_dot=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
+	float theta=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
+	float theta_dot=example_random_uniform(-MAX_START_VALUE,MAX_START_VALUE);
 	float genome_in[4];
 	float genome_out;
 	unsigned int i=0;

@@ -21,4 +21,8 @@ const example_t* example_get(const char* name);
 
 
 
+float example_random_uniform(float min,float max);
+
+
+
 #endif
