@@ -9,6 +9,7 @@ import struct
 LAYER_WIDTH=50
 NODE_WIDTH=20
 NODE_DISTANCE=20
+EDGE_WIDTH=5
 
 
 
@@ -46,11 +47,12 @@ for name in os.listdir("../build"):
 			else:
 				layer_element_count[max_layer].append(i)
 			node_layer_position[i]=(max_layer,len(layer_element_count[max_layer])-1)
+		width,height=len(layer_element_count),max(map(len,layer_element_count))
 		for i,(x,y) in enumerate(node_layer_position):
 			cx=x*(LAYER_WIDTH+NODE_WIDTH)+NODE_WIDTH/2
-			cy=y*(NODE_DISTANCE+NODE_WIDTH)+NODE_WIDTH/2
+			cy=y*(NODE_DISTANCE+NODE_WIDTH)+NODE_WIDTH/2+(height-len(layer_element_count[x]))*(NODE_DISTANCE+NODE_WIDTH)/2
 			node_layer_position[i]=(cx,cy)
-		image=Image.new("RGBA",(len(layer_element_count)*(LAYER_WIDTH+NODE_WIDTH)-LAYER_WIDTH,max(map(len,layer_element_count))*(NODE_DISTANCE+NODE_WIDTH)-NODE_DISTANCE),(0,0,0,0))
+		image=Image.new("RGBA",(width*(LAYER_WIDTH+NODE_WIDTH)-LAYER_WIDTH,height*(NODE_DISTANCE+NODE_WIDTH)-NODE_DISTANCE),(0,0,0,0))
 		draw=ImageDraw.Draw(image)
 		for i in range(0,node_count):
 			for j in range(0,node_count):
@@ -58,7 +60,7 @@ for name in os.listdir("../build"):
 				if (weight==0.0):
 					continue
 				t=int(255*min(max(weight/(2*weight_range)+0.5,0),1))
-				draw.line((node_layer_position[i],node_layer_position[j]),fill=(t,t,t),width=5)
+				draw.line((node_layer_position[i],node_layer_position[j]),fill=(t,t,t),width=EDGE_WIDTH)
 		for i,(cx,cy) in enumerate(node_layer_position):
 			t=min(max(nodes[i]/(2*bias_range)+0.5,0),1)
 			draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
