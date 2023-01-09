@@ -20,7 +20,7 @@ DECLARE_EXAMPLE_FN(xor3);
 
 static const example_t _example_data[]={
 	DECLARE_EXAMPLE(cartpole,4,1,500,250,0.999f),
-	DECLARE_EXAMPLE(rock_paper_scissors,2,1,500,250,0.95f),
+	DECLARE_EXAMPLE(rock_paper_scissors,2,1,2000,250,0.995f),
 	DECLARE_EXAMPLE(xor2,2,1,500,250,0.999f),
 	DECLARE_EXAMPLE(xor3,3,1,500,250,0.999f),
 	{

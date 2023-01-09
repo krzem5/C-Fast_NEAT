@@ -43,6 +43,7 @@ typedef struct _NEAT{
 	unsigned int population;
 	unsigned int surviving_population;
 	neat_genome_t* genomes;
+	float _last_best_fitness;
 } neat_t;
 
 
@@ -83,7 +84,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 
-const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*));
+const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*));
 
 
 
