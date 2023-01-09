@@ -28,9 +28,7 @@ typedef struct _STATE{
 			float angle;
 			float angular_velocity;
 		};
-		struct{
-			float raw[4];
-		};
+		float raw[4];
 	};
 } state_t;
 
