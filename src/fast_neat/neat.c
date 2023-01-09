@@ -167,13 +167,9 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*)){
-	const neat_genome_t* best=NULL;
 	neat_genome_t* genome=neat->genomes;
 	for (unsigned int i=0;i<neat->population;i++){
 		genome->fitness_score=fitness_score_callback(neat,genome);
-		if (!best||genome->fitness_score>best->fitness_score){
-			best=genome;
-		}
 		genome++;
 	}
 	_quicksort(neat->genomes,0,neat->population-1,neat->surviving_population);
@@ -275,5 +271,5 @@ const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callba
 		}
 		child++;
 	}
-	return best;
+	return neat->genomes;
 }
