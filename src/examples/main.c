@@ -1,5 +1,6 @@
 #include <example.h>
 #include <neat.h>
+#include <stdio.h>
 #include <string.h>
 
 
@@ -30,6 +31,12 @@ const example_t* example_get(const char* name){
 		if (!strcmp(out->name,name)){
 			return out;
 		}
+		out++;
+	}
+	printf("Unknown example '%s'. Possible values:\n",name);
+	out=_example_data;
+	while (out->name){
+		printf("- %s\n",out->name);
 		out++;
 	}
 	return NULL;
