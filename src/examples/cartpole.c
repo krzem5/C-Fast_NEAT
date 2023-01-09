@@ -5,13 +5,13 @@
 
 
 
-#define MAX_SIMULATION_STEPS 10000
+#define MAX_SIMULATION_STEPS 100000
 #define FORCE 10.0f
 #define GRAVITY 9.81f
 #define CART_MASS 1.0f
 #define POLE_MASS 0.1f
 #define POLE_LENGTH 0.5f
-#define TAU 0.02f
+#define TAU 0.08f
 #define MAX_X_VALUE 2.4f
 #define MAX_THETA_VALUE 0.2094f
 #define MAX_START_VALUE 0.05f
@@ -73,7 +73,7 @@ void cartpole_end_callback(const neat_t* neat,const neat_genome_t* genome){
 		x_dot+=TAU*x_dot_dot;
 		theta+=TAU*theta_dot;
 		theta_dot+=TAU*theta_dot_dot;
-		printf("%f %f %f %f\n",x,x_dot,theta,theta_dot);
+		// printf("%f %f %f %f\n",x,x_dot,theta,theta_dot);
 		i++;
 	}
 }
