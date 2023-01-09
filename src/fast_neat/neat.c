@@ -1,5 +1,6 @@
 #include <math.h>
 #include <neat.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -11,6 +12,22 @@
 #define WEIGHT_SET_CHANCE 0.1f
 #define BIAS_ADJUST_CHANCE 0.3f
 #define BIAS_SET_CHANCE 0.1f
+
+
+
+typedef struct _NEAT_MODEL_FILE_HEADER{
+	unsigned int input_count;
+	unsigned int output_count;
+	unsigned int node_count;
+	unsigned int edge_count;
+} neat_model_file_header_t;
+
+
+
+typedef struct _NEAT_MODEL_FILE_EDGE{
+	unsigned int index;
+	float weight;
+} neat_model_file_edge_t;
 
 
 
@@ -272,4 +289,72 @@ const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callba
 		child++;
 	}
 	return neat->genomes;
+}
+
+
+
+void neat_extract_model(const neat_t* neat,const neat_genome_t* genome,neat_model_t* out){
+	out->input_count=neat->input_count;
+	out->output_count=neat->output_count;
+	out->node_count=genome->node_count;
+	out->edge_count=0;
+	out->nodes=malloc(out->node_count*sizeof(neat_model_node_t));
+	out->edges=malloc(out->node_count*out->node_count*sizeof(neat_model_edge_t));
+	const neat_genome_edge_t* genome_edge=genome->edges;
+	neat_model_edge_t* edge=out->edges;
+	for (unsigned int i=0;i<out->node_count;i++){
+		(out->nodes+i)->bias=(genome->nodes+i)->bias;
+		for (unsigned int j=0;j<out->node_count;j++){
+			edge->weight=(genome_edge->state==NEAT_GENOME_EDGE_STATE_ENABLED?genome_edge->weight:0.0f);
+			if (edge->weight!=0.0f){
+				out->edge_count++;
+			}
+			genome_edge++;
+			edge++;
+		}
+	}
+}
+
+
+
+void neat_deinit_model(const neat_model_t* model){
+	free(model->nodes);
+	free(model->edges);
+}
+
+
+
+void neat_save_model(const neat_model_t* model,const char* file_path){
+	FILE* file=fopen(file_path,"wb");
+	neat_model_file_header_t header={
+		model->input_count,
+		model->output_count,
+		model->node_count,
+		model->edge_count
+	};
+	if (fwrite(&header,sizeof(header),1,file)!=1){
+		goto _error;
+	}
+	const neat_model_node_t* node=model->nodes+model->input_count;
+	for (unsigned int i=model->input_count;i<model->node_count;i++){
+		if (fwrite(&(node->bias),sizeof(float),1,file)!=1){
+			goto _error;
+		}
+		node++;
+	}
+	const neat_model_edge_t* edge=model->edges;
+	for (unsigned int i=0;i<model->node_count*model->node_count;i++){
+		if (edge->weight!=0.0f){
+			neat_model_file_edge_t edge_data={
+				i,
+				edge->weight
+			};
+			if (fwrite(&edge_data,sizeof(neat_model_file_edge_t),1,file)!=1){
+				goto _error;
+			}
+		}
+		edge++;
+	}
+_error:
+	fclose(file);
 }

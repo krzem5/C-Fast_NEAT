@@ -14,17 +14,17 @@ typedef uint8_t neat_genome_edge_state_t;
 
 
 
-typedef struct _NEAT_GENOME_EDGE{
-	float weight;
-	neat_genome_edge_state_t state;
-} neat_genome_edge_t;
-
-
-
 typedef struct _NEAT_GENOME_NODE{
 	float bias;
 	float value;
 } neat_genome_node_t;
+
+
+
+typedef struct _NEAT_GENOME_EDGE{
+	float weight;
+	neat_genome_edge_state_t state;
+} neat_genome_edge_t;
 
 
 
@@ -47,6 +47,30 @@ typedef struct _NEAT{
 
 
 
+typedef struct _NEAT_MODEL_NODE{
+	float bias;
+	float value;
+} neat_model_node_t;
+
+
+
+typedef struct _NEAT_MODEL_EDGE{
+	float weight;
+} neat_model_edge_t;
+
+
+
+typedef struct _NEAT_MODEL{
+	unsigned int input_count;
+	unsigned int output_count;
+	unsigned int node_count;
+	unsigned int edge_count;
+	neat_model_node_t* nodes;
+	neat_model_edge_t* edges;
+} neat_model_t;
+
+
+
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,unsigned int surviving_population,neat_t* out);
 
 
@@ -60,6 +84,18 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*));
+
+
+
+void neat_extract_model(const neat_t* neat,const neat_genome_t* genome,neat_model_t* out);
+
+
+
+void neat_deinit_model(const neat_model_t* model);
+
+
+
+void neat_save_model(const neat_model_t* model,const char* file_path);
 
 
 

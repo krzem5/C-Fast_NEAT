@@ -2,13 +2,14 @@
 #include <neat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 
 
 int main(void){
 	srand(time(NULL));
-	const example_t* example=example_get("cartpole");
+	const example_t* example=example_get("xor3");
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,example->surviving_population,&neat);
 	const neat_genome_t* best=NULL;
@@ -20,6 +21,12 @@ int main(void){
 		}
 	}
 	example->end_callback(&neat,best);
+	neat_model_t model;
+	neat_extract_model(&neat,best,&model);
 	neat_deinit(&neat);
+	char path[4096]="build/";
+	strcat(strcat(path,example->name),".neat");
+	neat_save_model(&model,path);
+	neat_deinit_model(&model);
 	return 0;
 }
