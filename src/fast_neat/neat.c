@@ -5,7 +5,7 @@
 
 
 
-#define BREED_MUTATION_CHANCE 0.5f
+#define BREED_MUTATION_CHANCE 0.2f
 #define NODE_ADD_CHANCE 0.01f
 #define EDGE_ADD_CHANCE 0.09f
 #define WEIGHT_ADJUST_CHANCE 0.4f
@@ -192,7 +192,7 @@ const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callba
 	_quicksort(neat->genomes,0,neat->population-1,neat->surviving_population);
 	neat_genome_t* child=neat->genomes+neat->surviving_population;
 	for (unsigned int idx=neat->surviving_population;idx<neat->population;idx++){
-		const neat_genome_t* random_genome=neat->genomes+_random_int(neat->surviving_population);
+		const neat_genome_t* random_genome=neat->genomes+_random_int(idx);
 		if (_random_uniform()<=BREED_MUTATION_CHANCE){
 			float value=_random_uniform()*(NODE_ADD_CHANCE+EDGE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
 			_adjust_genome_node_count(child,random_genome->node_count+(value<=NODE_ADD_CHANCE));
@@ -253,7 +253,7 @@ const neat_genome_t* neat_update(const neat_t* neat,float (*fitness_score_callba
 			}
 		}
 		else{
-			const neat_genome_t* second_random_genome=neat->genomes+_random_int(neat->surviving_population);
+			const neat_genome_t* second_random_genome=neat->genomes+_random_int(idx);
 			if (second_random_genome->fitness_score>random_genome->fitness_score){
 				const neat_genome_t* tmp=random_genome;
 				random_genome=second_random_genome;
