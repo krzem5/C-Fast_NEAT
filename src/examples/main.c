@@ -9,11 +9,13 @@
 
 
 
+DECLARE_EXAMPLE_FN(xor2);
 DECLARE_EXAMPLE_FN(xor3);
 
 
 
 static const example_t _example_data[]={
+	DECLARE_EXAMPLE(xor2,2,1,500,250,0.999f),
 	DECLARE_EXAMPLE(xor3,3,1,500,250,0.999f),
 	{
 		NULL
