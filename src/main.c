@@ -15,7 +15,7 @@ int main(void){
 	const neat_genome_t* best=NULL;
 	for (unsigned int i=0;i<10000;i++){
 		best=neat_update(&neat,example->fitness_score_callback);
-		printf("%.3f\n",best->fitness_score);
+		printf("%.2f%%\n",best->fitness_score*100);
 		if (best->fitness_score>=example->max_fitness_score){
 			break;
 		}

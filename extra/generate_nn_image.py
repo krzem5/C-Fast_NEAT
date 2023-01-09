@@ -25,8 +25,8 @@ for name in os.listdir("../build"):
 		for i in range(0,edge_count):
 			j,weight=struct.unpack("<If",rf.read(8))
 			edges[j]=weight
-		bias_range=max(map(abs,nodes))
-		weight_range=max(map(abs,edges))
+		bias_range=max(max(map(abs,nodes)),0.0001)
+		weight_range=max(max(map(abs,edges)),0.0001)
 		node_layer_position=[None for _ in range(0,node_count)]
 		layer_element_count=[[]]
 		for i in range(0,input_count):
