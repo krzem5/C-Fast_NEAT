@@ -1,3 +1,4 @@
+#include <example.h>
 #include <math.h>
 #include <neat.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 #define MAX_LETTER_COUNT 12
 #define LANGUAGE_COUNT 2
 #define WORD_COUNT 1000
+#define TEST_WORD_COUNT 500
 
 
 
@@ -31,13 +33,13 @@ static void _load_data(void){
 		while (*src){
 			unsigned int j=0;
 			while (*src&&*src!='\n'){
-				*data=*src;
+				*data=*src-97;
 				data++;
 				src++;
 				j++;
 			}
 			while (j<MAX_LETTER_COUNT){
-				*data=0;
+				*data=26;
 				data++;
 				j++;
 			}
@@ -56,7 +58,7 @@ static void _load_data(void){
 
 static void _encode_word(const char* word,float* out){
 	for (unsigned int i=0;i<MAX_LETTER_COUNT;i++){
-		unsigned int k=*word-97;
+		unsigned int k=*word;
 		word++;
 		for (unsigned int j=0;j<26;j++){
 			*out=(j==k?1.0f:0.0f);
@@ -87,14 +89,15 @@ float language_fitness_score_callback(const neat_t* neat,const neat_genome_t* ge
 	if (!loaded){
 		_load_data();
 	}
-	unsigned int word_language_index=0;
 	float genome_in[26*MAX_LETTER_COUNT];
 	float genome_out[LANGUAGE_COUNT];
 	float out=0.0f;
-	for (unsigned int i=0;i<WORD_COUNT*LANGUAGE_COUNT;i++){
-		_encode_word(words+i*MAX_LETTER_COUNT,genome_in);
+	unsigned int word_language_index=0;
+	for (unsigned int i=0;i<TEST_WORD_COUNT;i++){
+		unsigned int index=example_random_below(WORD_COUNT*LANGUAGE_COUNT);
+		_encode_word(words+index*MAX_LETTER_COUNT,genome_in);
 		neat_genome_evaluate(neat,genome,genome_in,genome_out);
-		word_language_index=i/WORD_COUNT;
+		word_language_index=index/WORD_COUNT;
 		for (unsigned int j=0;j<LANGUAGE_COUNT;j++){
 			float diff=genome_out[j]-(j==word_language_index?1.0f:0.0f);
 			out+=diff*diff;

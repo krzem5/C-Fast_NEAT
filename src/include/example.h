@@ -21,6 +21,10 @@ const example_t* example_get(const char* name);
 
 
 
+unsigned int example_random_below(unsigned int max);
+
+
+
 float example_random_uniform(float min,float max);
 
 

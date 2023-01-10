@@ -9,7 +9,7 @@
 
 int main(void){
 	srand(time(NULL));
-	const example_t* example=example_get("language");
+	const example_t* example=example_get("xor3");
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,example->surviving_population,&neat);
 	const neat_genome_t* best=NULL;
