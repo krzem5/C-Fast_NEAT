@@ -1,6 +1,5 @@
 from PIL import Image,ImageDraw
 import colorsys
-import itertools
 import os
 import struct
 
@@ -32,7 +31,7 @@ for name in os.listdir("../build"):
 		for i in range(0,input_count):
 			node_layer_position[i]=(0,i)
 			layer_element_count[0].append(i)
-		for i in itertools.chain(range(input_count+output_count,node_count),range(input_count,input_count+output_count)):
+		for i in range(input_count+output_count,node_count):
 			max_layer=0
 			for j in range(0,node_count):
 				if (edges[i*node_count+j]==0.0):
@@ -48,6 +47,11 @@ for name in os.listdir("../build"):
 				layer_element_count[max_layer].append(i)
 			node_layer_position[i]=(max_layer,len(layer_element_count[max_layer])-1)
 		width,height=len(layer_element_count),max(map(len,layer_element_count))
+		layer_element_count.append([])
+		width+=1
+		for i in range(input_count,input_count+output_count):
+			layer_element_count[-1].append(i)
+			node_layer_position[i]=(width-1,i-input_count)
 		for i,(x,y) in enumerate(node_layer_position):
 			cx=x*(LAYER_WIDTH+NODE_WIDTH)+NODE_WIDTH/2
 			cy=y*(NODE_DISTANCE+NODE_WIDTH)+NODE_WIDTH/2+(height-len(layer_element_count[x]))*(NODE_DISTANCE+NODE_WIDTH)/2
