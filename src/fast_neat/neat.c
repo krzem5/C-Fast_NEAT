@@ -32,7 +32,11 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 
 
 static inline float _sigmoid(float x){
+#if 1
 	return 1/(1+exp(-x));
+#else
+	return 0.5f*(x/(0.25f+fabsf(x)))+0.5f;
+#endif
 }
 
 
