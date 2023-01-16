@@ -122,13 +122,9 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*)){
 	neat_genome_t* genome=neat->genomes;
 	float average=0;
-	const neat_genome_t* best_genome=NULL;
 	for (unsigned int i=0;i<neat->population;i++){
 		genome->fitness_score=fitness_score_callback(neat,genome);
 		average+=genome->fitness_score;
-		if (!best_genome||genome->fitness_score>best_genome->fitness_score){
-			best_genome=genome;
-		}
 		genome++;
 	}
 	average/=neat->population;
@@ -164,7 +160,14 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 	if (stale||start_genome==neat->genomes){
 		start_genome=neat->genomes+1;
 	}
-	neat_genome_t* child=start_genome;
+	const neat_genome_t* best_genome=neat->genomes;
+	neat_genome_t* child=neat->genomes+1;
+	while (child<start_genome){
+		if (child->fitness_score>best_genome->fitness_score){
+			best_genome=child;
+		}
+		child++;
+	}
 	for (unsigned int idx=(start_genome-neat->genomes);idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+(_random_uint32()%idx);
 		if (stale||_random_uint32()&2){
