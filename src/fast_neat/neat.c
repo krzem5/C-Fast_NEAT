@@ -183,7 +183,7 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 		}
 		child++;
 	}
-	for (unsigned int idx=(start_genome-neat->genomes);idx<neat->population;idx++){
+	for (unsigned int idx=(unsigned int)(start_genome-neat->genomes);idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+(_random_uint32()%idx);
 		child->node_count=random_genome->node_count;
 		if (stale||(_random_uint32()&1)||1){

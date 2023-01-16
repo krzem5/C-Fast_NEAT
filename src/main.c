@@ -8,7 +8,7 @@
 
 
 int main(void){
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	const example_t* example=example_get("xor3");
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,&neat);
