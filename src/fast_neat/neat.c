@@ -106,24 +106,23 @@ void neat_deinit(const neat_t* neat){
 
 
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
-	float* node_values=neat->_evaluation_buffer;
 	for (unsigned int i=0;i<neat->input_count;i++){
-		node_values[i]=*in;
+		neat->_evaluation_buffer[i]=*in;
 		in++;
 	}
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		node_values[i]=0.0f;
+		neat->_evaluation_buffer[i]=0.0f;
 	}
 	const neat_genome_edge_t* edge=genome->edges+neat->input_count*genome->node_count;
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		float value=(genome->nodes+i)->bias;
 		for (unsigned int k=0;k<genome->node_count;k++){
-			value+=edge->weight*node_values[k];
+			value+=edge->weight*neat->_evaluation_buffer[k];
 			edge++;
 		}
-		node_values[i]=_sigmoid(value);
+		neat->_evaluation_buffer[i]=_sigmoid(value);
 		if (i>=genome->node_count-neat->output_count){
-			*out=node_values[i];
+			*out=neat->_evaluation_buffer[i];
 			out++;
 		}
 	}
