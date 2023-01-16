@@ -10,7 +10,7 @@ float xor2_fitness_score_callback(const neat_t* neat,const neat_genome_t* genome
 		float genome_in[2]={i&1,i>>1};
 		float genome_out;
 		neat_genome_evaluate(neat,genome,genome_in,&genome_out);
-		float diff=genome_out-((i&1)^(i>>1));
+		float diff=genome_out-((i&1)^(i>>1))*2+1;
 		out+=diff*diff;
 	}
 	return 1/(1+sqrtf(out));
@@ -23,6 +23,6 @@ void xor2_end_callback(const neat_t* neat,const neat_genome_t* genome){
 		float genome_in[2]={i&1,i>>1};
 		float genome_out;
 		neat_genome_evaluate(neat,genome,genome_in,&genome_out);
-		printf("%u^%u=%.3f\n",i&1,i>>1,genome_out);
+		printf("%u^%u=%.3f\n",i&1,i>>1,genome_out*0.5f+0.5f);
 	}
 }

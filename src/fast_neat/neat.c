@@ -31,12 +31,6 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 
 
 
-static inline float _sigmoid(float x){
-	return 0.5f*tanh(0.5f*x)+0.5f;
-}
-
-
-
 static inline float _random_uniform(void){
 	return ((float)rand())/RAND_MAX;
 }
@@ -116,7 +110,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 			value+=edge->weight*neat->_evaluation_buffer[k];
 			edge++;
 		}
-		neat->_evaluation_buffer[i]=_sigmoid(value);
+		neat->_evaluation_buffer[i]=tanhf(value);
 		if (i>=genome->node_count-neat->output_count){
 			*out=neat->_evaluation_buffer[i];
 			out++;
