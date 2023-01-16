@@ -119,7 +119,9 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 			weights+=8;
 			values+=8;
 		}
-		node_values[i]=tanhf(_vector_sum(sum256)+(genome->nodes+i)->bias);
+		float sum=_vector_sum(sum256)+(genome->nodes+i)->bias;
+		sum*=1+sum*sum;
+		node_values[i]=sum/(1+fabsf(sum));
 		if (i>=genome->node_count-neat->output_count){
 			*out=node_values[i];
 			out++;
