@@ -1,3 +1,4 @@
+#include <immintrin.h>
 #include <math.h>
 #include <neat.h>
 #include <stdio.h>
@@ -5,13 +6,21 @@
 
 
 
+#ifdef _MSC_VER
+#define AVX2_ALIGN __declspec(align(256))
+#else
+#define AVX2_ALIGN __attribute__((aligned(256)))
+#endif
+
+
+
 #define MAX_NODE_COUNT 512
 
 #define NODE_ADD_CHANCE 2
-#define WEIGHT_ADJUST_CHANCE 40
-#define WEIGHT_SET_CHANCE 10
-#define BIAS_ADJUST_CHANCE 30
-#define BIAS_SET_CHANCE 10
+#define WEIGHT_ADJUST_CHANCE 400
+#define WEIGHT_SET_CHANCE 100
+#define BIAS_ADJUST_CHANCE 300
+#define BIAS_SET_CHANCE 100
 #define MAX_STALE_FITNESS_DIFFERENCE 1e-6f
 
 
@@ -43,6 +52,13 @@ static inline float _random_uniform_rescaled(void){
 }
 
 
+static inline float _vector_sum(__m256 sum256){
+	__m128 sum128=_mm_add_ps(_mm256_castps256_ps128(sum256),_mm256_extractf128_ps(sum256,1));
+	__m128 sum64=_mm_add_ps(sum128,_mm_movehl_ps(sum128,sum128));
+	return _mm_cvtss_f32(_mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0x1)));
+}
+
+
 
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_t* out){
 	out->input_count=input_count;
@@ -50,7 +66,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->population=population;
 	out->_last_average_fitness_score=-1e8f;
 	out->genomes=malloc(population*sizeof(neat_genome_t));
-	unsigned int node_count=input_count+output_count;
+	unsigned int node_count=(input_count+output_count+7)&0xfffffff8;
 	neat_genome_t* genome=out->genomes;
 	for (unsigned int i=0;i<population;i++){
 		genome->node_count=node_count;
@@ -83,22 +99,27 @@ void neat_deinit(const neat_t* neat){
 
 
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
-	float node_values[MAX_NODE_COUNT];
+	AVX2_ALIGN float node_values[MAX_NODE_COUNT];
+	float* values=node_values+(neat->input_count&0xfffffff8);
+	__m256 zero=_mm256_setzero_ps();
+	for (unsigned int i=neat->input_count>>3;i<genome->node_count>>3;i++){
+		_mm256_store_ps(values,zero);
+		values+=8;
+	}
 	for (unsigned int i=0;i<neat->input_count;i++){
 		node_values[i]=*in;
 		in++;
 	}
+	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		node_values[i]=0.0f;
-	}
-	const neat_genome_edge_t* edge=genome->edges+neat->input_count*genome->node_count;
-	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		float value=(genome->nodes+i)->bias;
-		for (unsigned int k=0;k<genome->node_count;k++){
-			value+=edge->weight*node_values[k];
-			edge++;
+		__m256 sum256=_mm256_setzero_ps();
+		values=node_values;
+		for (unsigned int j=0;j<genome->node_count>>3;j++){
+			sum256=_mm256_fmadd_ps(_mm256_loadu_ps(weights),_mm256_load_ps(values),sum256);
+			weights+=8;
+			values+=8;
 		}
-		node_values[i]=tanhf(value);
+		node_values[i]=tanhf(_vector_sum(sum256)+(genome->nodes+i)->bias);
 		if (i>=genome->node_count-neat->output_count){
 			*out=node_values[i];
 			out++;
@@ -159,21 +180,19 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 	}
 	for (unsigned int idx=(start_genome-neat->genomes);idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+(_random_uint32()%idx);
-		if (stale||(_random_uint32()&1)){
+		child->node_count=random_genome->node_count;
+		if (stale||(_random_uint32()&1)||1){
 			unsigned int action=_random_uint32()%(NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
-			_Bool add_node=action<=NODE_ADD_CHANCE;
-			if (add_node&&random_genome->node_count==MAX_NODE_COUNT){
-				add_node=0;
-				action=NODE_ADD_CHANCE+1;
-			}
-			child->node_count=random_genome->node_count+add_node;
-			if (add_node){
-				unsigned int insert_index=random_genome->node_count-neat->output_count;
+			if (action<=NODE_ADD_CHANCE&&random_genome->node_count<MAX_NODE_COUNT){
+				child->node_count+=8;
+				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
+				unsigned int insert_index_start=insert_index_end-7;
 				const neat_genome_node_t* random_genome_node=random_genome->nodes;
 				const neat_genome_edge_t* random_genome_edge=random_genome->edges;
 				unsigned int k=0;
 				for (unsigned int i=0;i<child->node_count;i++){
-					if (i==insert_index){
+					_Bool inserted_i=i>=insert_index_start&&i<=insert_index_end;
+					if (inserted_i){
 						(child->nodes+i)->bias=0.0f;
 					}
 					else{
@@ -181,8 +200,8 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 						random_genome_node++;
 					}
 					for (unsigned int j=0;j<child->node_count;j++){
-						if (i==insert_index||j==insert_index){
-							(child->edges+k)->weight=_random_uniform_rescaled();
+						if (inserted_i||(j>=insert_index_start&&j<=insert_index_end)){
+							(child->edges+k)->weight=0.0f;
 						}
 						else{
 							(child->edges+k)->weight=random_genome_edge->weight;
@@ -191,6 +210,7 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 						k++;
 					}
 				}
+				(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight=_random_uniform_rescaled();
 			}
 			else{
 				unsigned int k=0;
@@ -217,7 +237,6 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 		}
 		else{
 			const neat_genome_t* second_random_genome=neat->genomes+(_random_uint32()%idx);
-			child->node_count=random_genome->node_count;
 			unsigned int k=0;
 			for (unsigned int i=0;i<random_genome->node_count;i++){
 				for (unsigned int j=0;j<random_genome->node_count;j++){
