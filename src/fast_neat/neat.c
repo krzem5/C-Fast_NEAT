@@ -1,7 +1,6 @@
 #include <immintrin.h>
 #include <math.h>
 #include <neat.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -52,6 +51,7 @@ static inline float _random_uniform_rescaled(void){
 }
 
 
+
 static inline float _vector_sum(__m256 sum256){
 	__m128 sum128=_mm_add_ps(_mm256_castps256_ps128(sum256),_mm256_extractf128_ps(sum256,1));
 	__m128 sum64=_mm_add_ps(sum128,_mm_movehl_ps(sum128,sum128));
@@ -66,12 +66,18 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->population=population;
 	out->_last_average_fitness_score=-1e8f;
 	out->genomes=malloc(population*sizeof(neat_genome_t));
+	out->_node_data=malloc(population*MAX_NODE_COUNT*sizeof(neat_genome_node_t));
+	out->_edge_data=malloc((population*MAX_NODE_COUNT*MAX_NODE_COUNT+8)*sizeof(neat_genome_edge_t));
 	unsigned int node_count=(input_count+output_count+7)&0xfffffff8;
 	neat_genome_t* genome=out->genomes;
+	neat_genome_node_t* node_data_ptr=out->_node_data;
+	neat_genome_edge_t* edge_data_ptr=(neat_genome_edge_t*)(((uintptr_t)(out->_edge_data+7))&0xffffffffffffffe0);
 	for (unsigned int i=0;i<population;i++){
 		genome->node_count=node_count;
-		genome->nodes=malloc(MAX_NODE_COUNT*sizeof(neat_genome_node_t));
-		genome->edges=malloc(MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t));
+		genome->nodes=node_data_ptr;
+		genome->edges=edge_data_ptr;
+		node_data_ptr+=MAX_NODE_COUNT;
+		edge_data_ptr+=MAX_NODE_COUNT*MAX_NODE_COUNT;
 		unsigned int l=0;
 		for (unsigned int j=0;j<node_count;j++){
 			(genome->nodes+j)->bias=0.0f;
@@ -87,13 +93,9 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 
 
 void neat_deinit(const neat_t* neat){
-	const neat_genome_t* genome=neat->genomes;
-	for (unsigned int i=0;i<neat->population;i++){
-		free(genome->nodes);
-		free(genome->edges);
-		genome++;
-	}
 	free(neat->genomes);
+	free(neat->_edge_data);
+	free(neat->_node_data);
 }
 
 
@@ -115,7 +117,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 		__m256 sum256=_mm256_setzero_ps();
 		values=node_values;
 		for (unsigned int j=0;j<genome->node_count>>3;j++){
-			sum256=_mm256_fmadd_ps(_mm256_loadu_ps(weights),_mm256_load_ps(values),sum256);
+			sum256=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256);
 			weights+=8;
 			values+=8;
 		}

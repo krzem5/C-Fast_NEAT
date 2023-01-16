@@ -31,6 +31,8 @@ typedef struct _NEAT{
 	unsigned int population;
 	float _last_average_fitness_score;
 	neat_genome_t* genomes;
+	neat_genome_node_t* _node_data;
+	neat_genome_edge_t* _edge_data;
 } neat_t;
 
 
