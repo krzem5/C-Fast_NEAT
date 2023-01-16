@@ -114,12 +114,12 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		node_values[i]=0.0f;
 	}
+	const neat_genome_edge_t* edge=genome->edges+neat->input_count*genome->node_count;
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		float value=(genome->nodes+i)->bias;
-		unsigned int j=i;
 		for (unsigned int k=0;k<genome->node_count;k++){
-			value+=(genome->edges+j)->weight*node_values[k];
-			j+=genome->node_count;
+			value+=edge->weight*node_values[k];
+			edge++;
 		}
 		node_values[i]=_sigmoid(value);
 		if (i>=genome->node_count-neat->output_count){
