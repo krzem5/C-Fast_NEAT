@@ -14,7 +14,7 @@ float rock_paper_scissors_fitness_score_callback(const neat_t* neat,const neat_g
 		float genome_in=i/2.0f;
 		float genome_out;
 		neat_genome_evaluate(neat,genome,&genome_in,&genome_out);
-		float diff=genome_out+2-((i+1)%3);
+		float diff=genome_out*0.5f+0.5f-((i+1)%3)/2.0f;
 		out+=diff*diff;
 	}
 	return 1/(1+sqrtf(out));
