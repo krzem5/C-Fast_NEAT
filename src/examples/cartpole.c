@@ -45,8 +45,8 @@ static void _init_state(state_t* out){
 
 
 static void _update_state(state_t* state,float force){
-	float angle_cos=cos(state->angle);
-	float angle_sin=sin(state->angle);
+	float angle_cos=cosf(state->angle);
+	float angle_sin=sinf(state->angle);
 	float tmp=(force+state->angular_velocity*state->angular_velocity*angle_sin*(POLE_MASS+POLE_LENGTH))/(POLE_MASS+CART_MASS);
 	float angular_acceletation=(angle_sin*GRAVITY-angle_cos*tmp)/(POLE_LENGTH*(4/3.0f-angle_cos*angle_cos*POLE_MASS/(POLE_MASS+CART_MASS)));
 	float acceleration=tmp-angular_acceletation*angle_cos*(POLE_MASS+POLE_LENGTH)/(POLE_MASS+CART_MASS);
