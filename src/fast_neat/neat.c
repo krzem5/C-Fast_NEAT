@@ -5,6 +5,8 @@
 
 
 
+#define MAX_NODE_COUNT 256
+
 #define NODE_ADD_CHANCE 2
 #define WEIGHT_ADJUST_CHANCE 40
 #define WEIGHT_SET_CHANCE 10
@@ -42,17 +44,6 @@ static inline float _random_uniform_rescaled(void){
 
 
 
-static void _adjust_genome_node_count(neat_genome_t* genome,unsigned int new_node_count){
-	if (genome->node_count==new_node_count){
-		return;
-	}
-	genome->node_count=new_node_count;
-	genome->nodes=realloc(genome->nodes,new_node_count*sizeof(neat_genome_node_t));
-	genome->edges=realloc(genome->edges,new_node_count*new_node_count*sizeof(neat_genome_edge_t));
-}
-
-
-
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_t* out){
 	out->input_count=input_count;
 	out->output_count=output_count;
@@ -63,8 +54,8 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	neat_genome_t* genome=out->genomes;
 	for (unsigned int i=0;i<population;i++){
 		genome->node_count=node_count;
-		genome->nodes=malloc(node_count*sizeof(neat_genome_node_t));
-		genome->edges=malloc(node_count*node_count*sizeof(neat_genome_edge_t));
+		genome->nodes=malloc(MAX_NODE_COUNT*sizeof(neat_genome_node_t));
+		genome->edges=malloc(MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t));
 		unsigned int l=0;
 		for (unsigned int j=0;j<node_count;j++){
 			(genome->nodes+j)->bias=0.0f;
@@ -75,8 +66,6 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		}
 		genome++;
 	}
-	out->_evaluation_buffer=malloc(node_count*sizeof(float));
-	out->_evaluation_buffer_size=node_count;
 }
 
 
@@ -89,29 +78,29 @@ void neat_deinit(const neat_t* neat){
 		genome++;
 	}
 	free(neat->genomes);
-	free(neat->_evaluation_buffer);
 }
 
 
 
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
+	float node_values[MAX_NODE_COUNT];
 	for (unsigned int i=0;i<neat->input_count;i++){
-		neat->_evaluation_buffer[i]=*in;
+		node_values[i]=*in;
 		in++;
 	}
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		neat->_evaluation_buffer[i]=0.0f;
+		node_values[i]=0.0f;
 	}
 	const neat_genome_edge_t* edge=genome->edges+neat->input_count*genome->node_count;
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		float value=(genome->nodes+i)->bias;
 		for (unsigned int k=0;k<genome->node_count;k++){
-			value+=edge->weight*neat->_evaluation_buffer[k];
+			value+=edge->weight*node_values[k];
 			edge++;
 		}
-		neat->_evaluation_buffer[i]=tanhf(value);
+		node_values[i]=tanhf(value);
 		if (i>=genome->node_count-neat->output_count){
-			*out=neat->_evaluation_buffer[i];
+			*out=node_values[i];
 			out++;
 		}
 	}
@@ -173,12 +162,12 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 		if (stale||(_random_uint32()&1)){
 			unsigned int action=_random_uint32()%(NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
 			_Bool add_node=action<=NODE_ADD_CHANCE;
-			_adjust_genome_node_count(child,random_genome->node_count+add_node);
+			if (add_node&&random_genome->node_count==MAX_NODE_COUNT){
+				add_node=0;
+				action=NODE_ADD_CHANCE+1;
+			}
+			child->node_count=random_genome->node_count+add_node;
 			if (add_node){
-				if (child->node_count>neat->_evaluation_buffer_size){
-					neat->_evaluation_buffer_size=child->node_count;
-					neat->_evaluation_buffer=realloc(neat->_evaluation_buffer,neat->_evaluation_buffer_size*sizeof(float));
-				}
 				unsigned int insert_index=random_genome->node_count-neat->output_count;
 				const neat_genome_node_t* random_genome_node=random_genome->nodes;
 				const neat_genome_edge_t* random_genome_edge=random_genome->edges;
@@ -228,7 +217,7 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 		}
 		else{
 			const neat_genome_t* second_random_genome=neat->genomes+(_random_uint32()%idx);
-			_adjust_genome_node_count(child,random_genome->node_count);
+			child->node_count=random_genome->node_count;
 			unsigned int k=0;
 			for (unsigned int i=0;i<random_genome->node_count;i++){
 				for (unsigned int j=0;j<random_genome->node_count;j++){
