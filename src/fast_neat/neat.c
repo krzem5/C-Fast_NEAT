@@ -170,7 +170,7 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 	}
 	for (unsigned int idx=(start_genome-neat->genomes);idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+(_random_uint32()%idx);
-		if (stale||_random_uint32()&2){
+		if (stale||(_random_uint32()&1)){
 			unsigned int action=_random_uint32()%(NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
 			_Bool add_node=action<=NODE_ADD_CHANCE;
 			_adjust_genome_node_count(child,random_genome->node_count+add_node);
