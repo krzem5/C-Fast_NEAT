@@ -5,7 +5,7 @@
 
 
 
-#define MAX_NODE_COUNT 256
+#define MAX_NODE_COUNT 512
 
 #define NODE_ADD_CHANCE 2
 #define WEIGHT_ADJUST_CHANCE 40

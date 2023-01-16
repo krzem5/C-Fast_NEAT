@@ -5,7 +5,7 @@
 
 
 
-#define SIMULATION_COUNT 100
+#define SIMULATION_COUNT 1000
 #define MAX_SIMULATION_STEPS 1000
 #define FORCE 10.0f
 #define GRAVITY 9.81f
