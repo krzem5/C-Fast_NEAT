@@ -30,7 +30,7 @@ typedef struct _NEAT{
 	unsigned int input_count;
 	unsigned int output_count;
 	unsigned int population;
-	float _last_best_fitness;
+	float _last_best_fitness_score;
 	neat_genome_t* genomes;
 } neat_t;
 
