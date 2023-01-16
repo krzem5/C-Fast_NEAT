@@ -39,7 +39,6 @@ typedef struct _NEAT{
 
 typedef struct _NEAT_MODEL_NODE{
 	float bias;
-	float value;
 } neat_model_node_t;
 
 
