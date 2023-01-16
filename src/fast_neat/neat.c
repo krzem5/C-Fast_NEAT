@@ -58,7 +58,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->input_count=input_count;
 	out->output_count=output_count;
 	out->population=population;
-	out->_last_best_fitness_score=-1e8f;
+	out->_last_average_fitness_score=-1e8f;
 	out->genomes=malloc(population*sizeof(neat_genome_t));
 	unsigned int node_count=input_count+output_count;
 	neat_genome_t* genome=out->genomes;
@@ -133,8 +133,8 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 		genome++;
 	}
 	average/=neat->population;
-	_Bool stale=fabs(neat->_last_best_fitness_score-average)<MAX_STALE_FITNESS_DIFFERENCE;
-	neat->_last_best_fitness_score=average;
+	_Bool stale=fabs(neat->_last_average_fitness_score-average)<MAX_STALE_FITNESS_DIFFERENCE;
+	neat->_last_average_fitness_score=average;
 	neat_genome_t* start_genome=neat->genomes;
 	neat_genome_t* end_genome=genome;
 	genome=start_genome;
