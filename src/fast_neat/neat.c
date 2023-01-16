@@ -227,10 +227,10 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 				(child->edges+_random_int(random_genome->node_count*random_genome->node_count))->weight=_random_uniform()*2-1;
 			}
 			else if (value<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE){
-				(child->nodes+_random_int(random_genome->node_count-neat->input_count)+neat->input_count)->bias+=_random_uniform()*2-1;
+				(child->nodes+_random_int(random_genome->node_count))->bias+=_random_uniform()*2-1;
 			}
 			else{
-				(child->nodes+_random_int(random_genome->node_count-neat->input_count)+neat->input_count)->bias=_random_uniform()*2-1;
+				(child->nodes+_random_int(random_genome->node_count))->bias=_random_uniform()*2-1;
 			}
 		}
 		else{
