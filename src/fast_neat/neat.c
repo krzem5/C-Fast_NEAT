@@ -1,6 +1,7 @@
 #include <immintrin.h>
 #include <math.h>
 #include <neat.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 
