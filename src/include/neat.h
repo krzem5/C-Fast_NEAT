@@ -6,7 +6,6 @@
 
 typedef struct _NEAT_GENOME_NODE{
 	float bias;
-	float value;
 } neat_genome_node_t;
 
 
@@ -32,6 +31,8 @@ typedef struct _NEAT{
 	unsigned int population;
 	float _last_best_fitness_score;
 	neat_genome_t* genomes;
+	float* _evaluation_buffer;
+	unsigned int _evaluation_buffer_size;
 } neat_t;
 
 

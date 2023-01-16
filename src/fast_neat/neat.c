@@ -82,6 +82,8 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		}
 		genome++;
 	}
+	out->_evaluation_buffer=malloc(node_count*sizeof(float));
+	out->_evaluation_buffer_size=node_count;
 }
 
 
@@ -94,35 +96,32 @@ void neat_deinit(const neat_t* neat){
 		genome++;
 	}
 	free(neat->genomes);
+	free(neat->_evaluation_buffer);
 }
 
 
 
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
-	neat_genome_node_t* node=genome->nodes;
+	float* node_values=neat->_evaluation_buffer;
 	for (unsigned int i=0;i<neat->input_count;i++){
-		node->value=*in;
-		node++;
+		node_values[i]=*in;
 		in++;
 	}
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		node->value=0.0f;
-		node++;
+		node_values[i]=0.0f;
 	}
-	node=genome->nodes+neat->input_count;
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		float value=node->bias;
+		float value=(genome->nodes+i)->bias;
 		unsigned int j=i;
 		for (unsigned int k=0;k<genome->node_count;k++){
-			value+=(genome->edges+j)->weight*(genome->nodes+k)->value;
+			value+=(genome->edges+j)->weight*node_values[k];
 			j+=genome->node_count;
 		}
-		node->value=_sigmoid(value);
+		node_values[i]=_sigmoid(value);
 		if (i>=genome->node_count-neat->output_count){
-			*out=node->value;
+			*out=node_values[i];
 			out++;
 		}
-		node++;
 	}
 }
 
@@ -181,6 +180,10 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 			_Bool add_node=value<=NODE_ADD_CHANCE;
 			_adjust_genome_node_count(child,random_genome->node_count+add_node);
 			if (add_node){
+				if (child->node_count>neat->_evaluation_buffer_size){
+					neat->_evaluation_buffer_size=child->node_count;
+					neat->_evaluation_buffer=realloc(neat->_evaluation_buffer,neat->_evaluation_buffer_size*sizeof(float));
+				}
 				unsigned int insert_index=random_genome->node_count-neat->output_count;
 				const neat_genome_node_t* random_genome_node=random_genome->nodes;
 				const neat_genome_edge_t* random_genome_edge=random_genome->edges;
