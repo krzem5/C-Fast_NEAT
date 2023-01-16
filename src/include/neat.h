@@ -4,16 +4,6 @@
 
 
 
-#define NEAT_GENOME_EDGE_STATE_ENABLED 0
-#define NEAT_GENOME_EDGE_STATE_DISABLED 1
-#define NEAT_GENOME_EDGE_STATE_NOT_CREATED 2
-
-
-
-typedef uint8_t neat_genome_edge_state_t;
-
-
-
 typedef struct _NEAT_GENOME_NODE{
 	float bias;
 	float value;
@@ -23,7 +13,6 @@ typedef struct _NEAT_GENOME_NODE{
 
 typedef struct _NEAT_GENOME_EDGE{
 	float weight;
-	neat_genome_edge_state_t state;
 } neat_genome_edge_t;
 
 
@@ -41,9 +30,8 @@ typedef struct _NEAT{
 	unsigned int input_count;
 	unsigned int output_count;
 	unsigned int population;
-	unsigned int surviving_population;
-	neat_genome_t* genomes;
 	float _last_best_fitness;
+	neat_genome_t* genomes;
 } neat_t;
 
 
@@ -72,7 +60,7 @@ typedef struct _NEAT_MODEL{
 
 
 
-void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,unsigned int surviving_population,neat_t* out);
+void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_t* out);
 
 
 
