@@ -204,17 +204,6 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 						k++;
 					}
 				}
-				unsigned int idx=_random_int(random_genome->node_count*random_genome->node_count);
-				neat_genome_edge_t* edge=child->edges+idx;
-				if (!edge->weight){
-					edge->weight=_random_uniform()*2-1;
-				}
-				unsigned int i=idx/random_genome->node_count;
-				unsigned int j=idx%random_genome->node_count;
-				(child->edges+i*child->node_count+insert_index)->weight=1.0f;
-				(child->edges+insert_index*child->node_count+j)->weight=edge->weight;
-				(child->nodes+insert_index)->bias=0.0f;
-				edge->weight=0.0f;
 			}
 			else{
 				unsigned int k=0;
