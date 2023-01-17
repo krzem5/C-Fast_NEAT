@@ -93,10 +93,6 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 
-void neat_genome_evaluate_array(const neat_t* neat,const neat_genome_t* genome,const neat_array_evalutor_t* evaluator,const float* in,float* out);
-
-
-
 const neat_genome_t* neat_update(neat_t* neat);
 
 
