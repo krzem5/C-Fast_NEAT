@@ -69,6 +69,97 @@ static inline unsigned int _random_int_fast(unsigned int mask,unsigned int max){
 
 
 
+static void _process_data_chunk(neat_thread_data_t* data){
+	neat_t* neat=data->neat;
+	unsigned int offset=neat->_surviving_genome_count+data->index;
+	neat_genome_t* child=neat->genomes+offset;
+	for (unsigned int idx=offset;idx<neat->population;idx+=NEAT_THREAD_COUNT){
+		const neat_genome_t* random_genome=neat->genomes+_random_int_fast(neat->_surviving_genome_mask,neat->_surviving_genome_count);
+		child->node_count=random_genome->node_count;
+		if (neat->_stale||(_random_uint32()&1)){
+			unsigned int action=_random_uint32()%(NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
+			if (action<=NODE_ADD_CHANCE&&random_genome->node_count<MAX_NODE_COUNT){
+				child->node_count+=8;
+				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
+				unsigned int insert_index_start=insert_index_end-7;
+				const neat_genome_node_t* random_genome_node=random_genome->nodes;
+				const neat_genome_edge_t* random_genome_edge=random_genome->edges;
+				unsigned int k=0;
+				for (unsigned int i=0;i<child->node_count;i++){
+					_Bool inserted_i=i>=insert_index_start&&i<=insert_index_end;
+					if (inserted_i){
+						(child->nodes+i)->bias=0.0f;
+					}
+					else{
+						(child->nodes+i)->bias=random_genome_node->bias;
+						random_genome_node++;
+					}
+					for (unsigned int j=0;j<child->node_count;j++){
+						if (inserted_i||(j>=insert_index_start&&j<=insert_index_end)){
+							(child->edges+k)->weight=0.0f;
+						}
+						else{
+							(child->edges+k)->weight=random_genome_edge->weight;
+							random_genome_edge++;
+						}
+						k++;
+					}
+				}
+				goto _mutate_random_edge;
+			}
+			else{
+				unsigned int k=0;
+				for (unsigned int i=0;i<random_genome->node_count;i++){
+					(child->nodes+i)->bias=(random_genome->nodes+i)->bias;
+					for (unsigned int j=0;j<random_genome->node_count;j++){
+						(child->edges+k)->weight=(random_genome->edges+k)->weight;
+						k++;
+					}
+				}
+				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
+					(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight+=_random_uniform_rescaled();
+				}
+				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE){
+_mutate_random_edge:
+					(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight=_random_uniform_rescaled();
+				}
+				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE){
+					(child->nodes+(_random_uint32()%(random_genome->node_count)))->bias+=_random_uniform_rescaled();
+				}
+				else{
+					(child->nodes+(_random_uint32()%(random_genome->node_count)))->bias=_random_uniform_rescaled();
+				}
+			}
+		}
+		else{
+			const neat_genome_t* second_random_genome=neat->genomes+_random_int_fast(neat->_surviving_genome_mask,neat->_surviving_genome_count);
+			unsigned int k=0;
+			unsigned int random_value=_random_uint32();
+			for (unsigned int i=0;i<random_genome->node_count;i++){
+				for (unsigned int j=0;j<random_genome->node_count;j++){
+					(child->edges+k)->weight=(i<second_random_genome->node_count&&j<second_random_genome->node_count&&(random_value&1)?random_genome->edges+k:second_random_genome->edges+i*second_random_genome->node_count+j)->weight;
+					k++;
+					random_value>>=1;
+					if (!random_value){
+						random_value=_random_uint32();
+					}
+				}
+				(child->nodes+i)->bias=((i<second_random_genome->node_count&&(random_value&1)?second_random_genome:random_genome)->nodes+i)->bias;
+				random_value>>=1;
+				if (!random_value){
+					random_value=_random_uint32();
+				}
+			}
+		}
+		neat->_fitness_score_sum-=child->fitness_score;
+		child->fitness_score=neat->fitness_score_callback(neat,child);
+		neat->_fitness_score_sum+=child->fitness_score;
+		child+=NEAT_THREAD_COUNT;
+	}
+}
+
+
+
 static void* _thread_task(void* arg){
 	neat_thread_data_t* data=arg;
 	neat_t* neat=data->neat;
@@ -80,11 +171,12 @@ static void* _thread_task(void* arg){
 
 
 
-void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_t* out){
+void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_fitness_score_callback_t fitness_score_callback,neat_t* out){
 	out->input_count=input_count;
 	out->output_count=output_count;
 	out->population=population;
 	out->_last_average_fitness_score=-1e8f;
+	out->fitness_score_callback=fitness_score_callback;
 	out->genomes=malloc(population*sizeof(neat_genome_t));
 	out->_node_data=malloc(population*MAX_NODE_COUNT*sizeof(neat_genome_node_t));
 	out->_edge_data=malloc(population*MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t)+31);
@@ -171,7 +263,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 
-const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*)){
+const neat_genome_t* neat_update(neat_t* neat){
 	float average=neat->_fitness_score_sum/neat->population;
 	neat->_stale=fabs(neat->_last_average_fitness_score-average)<MAX_STALE_FITNESS_DIFFERENCE;
 	neat->_last_average_fitness_score=average;
@@ -215,88 +307,8 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 	}
 	neat->_surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
 	neat->_surviving_genome_mask=(1<<(_get_last_bit_index(neat->_surviving_genome_count)+1))-1;
-	for (unsigned int idx=neat->_surviving_genome_count;idx<neat->population;idx++){
-		const neat_genome_t* random_genome=neat->genomes+_random_int_fast(neat->_surviving_genome_mask,neat->_surviving_genome_count);
-		child->node_count=random_genome->node_count;
-		if (neat->_stale||(_random_uint32()&1)){
-			unsigned int action=_random_uint32()%(NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
-			if (action<=NODE_ADD_CHANCE&&random_genome->node_count<MAX_NODE_COUNT){
-				child->node_count+=8;
-				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
-				unsigned int insert_index_start=insert_index_end-7;
-				const neat_genome_node_t* random_genome_node=random_genome->nodes;
-				const neat_genome_edge_t* random_genome_edge=random_genome->edges;
-				unsigned int k=0;
-				for (unsigned int i=0;i<child->node_count;i++){
-					_Bool inserted_i=i>=insert_index_start&&i<=insert_index_end;
-					if (inserted_i){
-						(child->nodes+i)->bias=0.0f;
-					}
-					else{
-						(child->nodes+i)->bias=random_genome_node->bias;
-						random_genome_node++;
-					}
-					for (unsigned int j=0;j<child->node_count;j++){
-						if (inserted_i||(j>=insert_index_start&&j<=insert_index_end)){
-							(child->edges+k)->weight=0.0f;
-						}
-						else{
-							(child->edges+k)->weight=random_genome_edge->weight;
-							random_genome_edge++;
-						}
-						k++;
-					}
-				}
-				goto _mutate_random_edge;
-			}
-			else{
-				unsigned int k=0;
-				for (unsigned int i=0;i<random_genome->node_count;i++){
-					(child->nodes+i)->bias=(random_genome->nodes+i)->bias;
-					for (unsigned int j=0;j<random_genome->node_count;j++){
-						(child->edges+k)->weight=(random_genome->edges+k)->weight;
-						k++;
-					}
-				}
-				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
-					(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight+=_random_uniform_rescaled();
-				}
-				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE){
-_mutate_random_edge:
-					(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight=_random_uniform_rescaled();
-				}
-				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE){
-					(child->nodes+(_random_uint32()%(random_genome->node_count)))->bias+=_random_uniform_rescaled();
-				}
-				else{
-					(child->nodes+(_random_uint32()%(random_genome->node_count)))->bias=_random_uniform_rescaled();
-				}
-			}
-		}
-		else{
-			const neat_genome_t* second_random_genome=neat->genomes+_random_int_fast(neat->_surviving_genome_mask,neat->_surviving_genome_count);
-			unsigned int k=0;
-			unsigned int random_value=_random_uint32();
-			for (unsigned int i=0;i<random_genome->node_count;i++){
-				for (unsigned int j=0;j<random_genome->node_count;j++){
-					(child->edges+k)->weight=(i<second_random_genome->node_count&&j<second_random_genome->node_count&&(random_value&1)?random_genome->edges+k:second_random_genome->edges+i*second_random_genome->node_count+j)->weight;
-					k++;
-					random_value>>=1;
-					if (!random_value){
-						random_value=_random_uint32();
-					}
-				}
-				(child->nodes+i)->bias=((i<second_random_genome->node_count&&(random_value&1)?second_random_genome:random_genome)->nodes+i)->bias;
-				random_value>>=1;
-				if (!random_value){
-					random_value=_random_uint32();
-				}
-			}
-		}
-		neat->_fitness_score_sum-=child->fitness_score;
-		child->fitness_score=fitness_score_callback(neat,child);
-		neat->_fitness_score_sum+=child->fitness_score;
-		child++;
+	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
+		_process_data_chunk(neat->_threads+i);
 	}
 	return best_genome;
 }

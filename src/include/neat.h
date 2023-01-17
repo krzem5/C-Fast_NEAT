@@ -39,11 +39,16 @@ typedef struct _NEAT_THREAD_DATA{
 
 
 
+typedef float (*neat_fitness_score_callback_t)(const struct _NEAT*,const neat_genome_t*);
+
+
+
 typedef struct _NEAT{
 	unsigned int input_count;
 	unsigned int output_count;
 	unsigned int population;
 	float _last_average_fitness_score;
+	neat_fitness_score_callback_t fitness_score_callback;
 	neat_genome_t* genomes;
 	neat_thread_data_t _threads[NEAT_THREAD_COUNT];
 	neat_genome_node_t* _node_data;
@@ -80,7 +85,7 @@ typedef struct _NEAT_MODEL{
 
 
 
-void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_t* out);
+void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_fitness_score_callback_t fitness_score_callback,neat_t* out);
 
 
 
@@ -92,7 +97,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 
-const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*));
+const neat_genome_t* neat_update(neat_t* neat);
 
 
 

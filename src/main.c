@@ -11,10 +11,10 @@ int main(void){
 	srand((unsigned int)time(NULL));
 	const example_t* example=example_get("xor3");
 	neat_t neat;
-	neat_init(example->input_count,example->output_count,example->population,&neat);
+	neat_init(example->input_count,example->output_count,example->population,example->fitness_score_callback,&neat);
 	const neat_genome_t* best=NULL;
 	for (unsigned int i=0;i<10000;i++){
-		best=neat_update(&neat,example->fitness_score_callback);
+		best=neat_update(&neat);
 		printf("%.2f%%\n",best->fitness_score*100);
 		if (best->fitness_score>=example->max_fitness_score){
 			break;
