@@ -300,13 +300,12 @@ const neat_genome_t* neat_update(neat_t* neat){
 				goto _mutate_random_edge;
 			}
 			else{
-				unsigned int k=0;
-				for (unsigned int i=0;i<random_genome->node_count;i++){
-					(child->nodes+i)->bias=(random_genome->nodes+i)->bias;
-					for (unsigned int j=0;j<random_genome->node_count;j++){
-						(child->edges+k)->weight=(random_genome->edges+k)->weight;
-						k++;
-					}
+				const float* edges=(const float*)(random_genome->edges);
+				float* child_edges=(float*)(child->edges);
+				for (unsigned int i=0;i<random_genome->node_count*random_genome->node_count;i+=8){
+					_mm256_store_ps(child_edges,_mm256_loadu_ps(edges));
+					child_edges+=8;
+					edges+=8;
 				}
 				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
 					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight+=_random_uniform(neat);
