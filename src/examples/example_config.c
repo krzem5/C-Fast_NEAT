@@ -21,10 +21,10 @@ DECLARE_EXAMPLE_FN(xor3);
 
 static const example_t _example_data[]={
 	DECLARE_EXAMPLE(cartpole,4,1,500,0.999f),
-	DECLARE_EXAMPLE(language,312,2,500,0.99f),
+	DECLARE_EXAMPLE(language,312,2,128,0.99f),
 	DECLARE_EXAMPLE(rock_paper_scissors,1,1,4000,0.999f),
-	DECLARE_EXAMPLE(xor2,2,1,500,0.999f),
-	DECLARE_EXAMPLE(xor3,3,1,500,0.999f),
+	DECLARE_EXAMPLE(xor2,2,1,128,0.999f),
+	DECLARE_EXAMPLE(xor3,3,1,128,0.999f),
 	{
 		NULL
 	}
