@@ -201,11 +201,13 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		edge_data_ptr+=(MAX_NODE_COUNT-node_count)*(MAX_NODE_COUNT-node_count);
 		genome++;
 	}
-	out->_thread_counter=0;
+	out->_thread_counter=1;
 	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
 		(out->_threads+i)->neat=out;
 		(out->_threads+i)->index=i;
-		pthread_create(&((out->_threads+i)->handle),NULL,_thread_task,out->_threads+i);
+		if (i){
+			pthread_create(&((out->_threads+i)->handle),NULL,_thread_task,out->_threads+i);
+		}
 	}
 	while (out->_thread_counter<NEAT_THREAD_COUNT);
 	out->_fitness_score_sum=0.0f;
