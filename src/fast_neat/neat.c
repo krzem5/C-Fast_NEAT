@@ -73,6 +73,7 @@ static void _process_data_chunk(neat_thread_data_t* data){
 	neat_t* neat=data->neat;
 	unsigned int offset=neat->_surviving_genome_count+data->index;
 	neat_genome_t* child=neat->genomes+offset;
+	float delta_fitness_sum=0.0f;
 	for (unsigned int idx=offset;idx<neat->population;idx+=NEAT_THREAD_COUNT){
 		const neat_genome_t* random_genome=neat->genomes+_random_int_fast(neat->_surviving_genome_mask,neat->_surviving_genome_count);
 		child->node_count=random_genome->node_count;
@@ -151,11 +152,12 @@ _mutate_random_edge:
 				}
 			}
 		}
-		neat->_fitness_score_sum-=child->fitness_score;
+		delta_fitness_sum-=child->fitness_score;
 		child->fitness_score=neat->fitness_score_callback(neat,child);
-		neat->_fitness_score_sum+=child->fitness_score;
+		delta_fitness_sum+=child->fitness_score;
 		child+=NEAT_THREAD_COUNT;
 	}
+	data->fitness_score_sum=delta_fitness_sum;
 }
 
 
@@ -311,6 +313,7 @@ const neat_genome_t* neat_update(neat_t* neat){
 	neat->_surviving_genome_mask=(1<<(_get_last_bit_index(neat->_surviving_genome_count)+1))-1;
 	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
 		_process_data_chunk(neat->_threads+i);
+		neat->_fitness_score_sum+=(neat->_threads+i)->fitness_score_sum;
 	}
 	return best_genome;
 }
