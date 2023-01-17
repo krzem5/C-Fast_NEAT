@@ -7,19 +7,31 @@
 
 
 
+static unsigned long int get_time(void){
+	struct timespec tm;
+	clock_gettime(CLOCK_REALTIME,&tm);
+	return tm.tv_sec*1000000000+tm.tv_nsec;
+}
+
+
+
 int main(void){
-	srand((unsigned int)time(NULL));
+	srand(get_time()&0xffffffff);
 	const example_t* example=example_get("xor3");
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,example->fitness_score_callback,&neat);
+	unsigned long int start=get_time();
 	const neat_genome_t* best=NULL;
-	for (unsigned int i=0;i<10000;i++){
+	unsigned int i=0;
+	for (;i<10000;i++){
 		best=neat_update(&neat);
 		printf("%.2f%%\n",best->fitness_score*100);
 		if (best->fitness_score>=example->max_fitness_score){
 			break;
 		}
 	}
+	double delta_time=(get_time()-start)*1e-9;
+	printf("Iterations: %u, Time: %.3fs, Time per Iteration: %.6fs\n",i,delta_time,delta_time/i);
 	example->end_callback(&neat,best);
 	neat_model_t model;
 	neat_extract_model(&neat,best,&model);

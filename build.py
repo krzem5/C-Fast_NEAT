@@ -17,7 +17,7 @@ if ("--release" in sys.argv):
 		for f in cfl:
 			if (f[-2:]==".c"):
 				fl.append(f"build/{(r+f).replace('/','$')}.o")
-				if (subprocess.run(["gcc","-Wall","-lm","-Werror","-mavx","-mavx2","-mfma","-O3","-c",r+f,"-o",f"build/{(r+f).replace('/','$')}.o","-Isrc/include"]).returncode!=0):
+				if (subprocess.run(["gcc","-Wall","-lm","-Werror","-march=native","-ffast-math","-O3","-c",r+f,"-o",f"build/{(r+f).replace('/','$')}.o","-Isrc/include"]).returncode!=0):
 					sys.exit(1)
 	if (subprocess.run(["gcc","-o","build/fast_neat"]+fl+["-lm"]).returncode!=0):
 		sys.exit(1)
@@ -28,7 +28,7 @@ else:
 		for f in cfl:
 			if (f[-2:]==".c"):
 				fl.append(f"build/{(r+f).replace('/','$')}.o")
-				if (subprocess.run(["gcc","-Wall","-g","-lm","-Werror","-mavx","-mavx2","-mfma","-O0","-c",r+f,"-o",f"build/{(r+f).replace('/','$')}.o","-Isrc/include"]).returncode!=0):
+				if (subprocess.run(["gcc","-Wall","-g","-lm","-Werror","-march=native","-ffast-math","-O0","-c",r+f,"-o",f"build/{(r+f).replace('/','$')}.o","-Isrc/include"]).returncode!=0):
 					sys.exit(1)
 	if (subprocess.run(["gcc","-g","-o","build/fast_neat"]+fl+["-lm"]).returncode!=0):
 		sys.exit(1)
