@@ -172,7 +172,6 @@ const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(co
 	neat_genome_t* genome=neat->genomes;
 	float average=0;
 	for (unsigned int i=0;i<neat->population;i++){
-		genome->fitness_score=fitness_score_callback(neat,genome);
 		average+=genome->fitness_score;
 		genome++;
 	}
@@ -297,6 +296,7 @@ _mutate_random_edge:
 				}
 			}
 		}
+		child->fitness_score=fitness_score_callback(neat,child);
 		child++;
 	}
 	return best_genome;
