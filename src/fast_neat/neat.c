@@ -56,7 +56,7 @@ static inline float _random_uniform_rescaled(void){
 static inline float _vector_sum(__m256 sum256){
 	__m128 sum128=_mm_add_ps(_mm256_castps256_ps128(sum256),_mm256_extractf128_ps(sum256,1));
 	__m128 sum64=_mm_add_ps(sum128,_mm_movehl_ps(sum128,sum128));
-	return _mm_cvtss_f32(_mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0x1)));
+	return _mm_cvtss_f32(_mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0b01)));
 }
 
 
@@ -68,25 +68,25 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->_last_average_fitness_score=-1e8f;
 	out->genomes=malloc(population*sizeof(neat_genome_t));
 	out->_node_data=malloc(population*MAX_NODE_COUNT*sizeof(neat_genome_node_t));
-	out->_edge_data=malloc((population*MAX_NODE_COUNT*MAX_NODE_COUNT+8)*sizeof(neat_genome_edge_t));
+	out->_edge_data=malloc(population*MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t)+31);
 	unsigned int node_count=(input_count+output_count+7)&0xfffffff8;
 	neat_genome_t* genome=out->genomes;
 	neat_genome_node_t* node_data_ptr=out->_node_data;
-	neat_genome_edge_t* edge_data_ptr=(neat_genome_edge_t*)(((uintptr_t)(out->_edge_data+7))&0xffffffffffffffe0);
+	neat_genome_edge_t* edge_data_ptr=(neat_genome_edge_t*)((((uintptr_t)out->_edge_data)+31)&0xffffffffffffffe0ull);
 	for (unsigned int i=0;i<population;i++){
 		genome->node_count=node_count;
 		genome->nodes=node_data_ptr;
 		genome->edges=edge_data_ptr;
-		node_data_ptr+=MAX_NODE_COUNT;
-		edge_data_ptr+=MAX_NODE_COUNT*MAX_NODE_COUNT;
-		unsigned int l=0;
 		for (unsigned int j=0;j<node_count;j++){
-			(genome->nodes+j)->bias=0.0f;
+			node_data_ptr->bias=0.0f;
+			node_data_ptr++;
 			for (unsigned int k=0;k<node_count;k++){
-				(genome->edges+l)->weight=_random_uniform_rescaled();
-				l++;
+				edge_data_ptr->weight=_random_uniform_rescaled();
+				edge_data_ptr++;
 			}
 		}
+		node_data_ptr+=MAX_NODE_COUNT-node_count;
+		edge_data_ptr+=(MAX_NODE_COUNT-node_count)*(MAX_NODE_COUNT-node_count);
 		genome++;
 	}
 }
