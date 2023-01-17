@@ -1,6 +1,5 @@
 #ifndef __NEAT_H__
 #define __NEAT_H__
-#include <stdint.h>
 
 
 
@@ -33,6 +32,13 @@ typedef float (*neat_fitness_score_callback_t)(const struct _NEAT*,const neat_ge
 
 
 
+typedef struct _NEAT_PRNG{
+	unsigned int data[64];
+	unsigned int count;
+} neat_prng_t;
+
+
+
 typedef struct _NEAT{
 	unsigned int input_count;
 	unsigned int output_count;
@@ -43,6 +49,7 @@ typedef struct _NEAT{
 	neat_genome_node_t* _node_data;
 	neat_genome_edge_t* _edge_data;
 	float _fitness_score_sum;
+	neat_prng_t _prng_state;
 } neat_t;
 
 

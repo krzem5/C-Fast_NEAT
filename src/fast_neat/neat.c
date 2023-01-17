@@ -1,6 +1,7 @@
 #include <immintrin.h>
 #include <math.h>
 #include <neat.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -38,14 +39,45 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 
 
 
-static inline unsigned int _random_uint32(void){
-	return (rand()&0xff)|((rand()&0xff)<<8)|((rand()&0xff)<<16)|((rand()&0xff)<<24);
+static unsigned int _random_uint32(neat_t* neat){
+	if (!neat->_prng_state.count){
+		__m256i* ptr=(__m256i*)(neat->_prng_state.data);
+		__m256i permute_a=_mm256_set_epi32(4,3,2,1,0,7,6,5);
+		__m256i permute_b=_mm256_set_epi32(2,1,0,7,6,5,4,3);
+		__m256i s0=_mm256_lddqu_si256(ptr+0);
+		__m256i s1=_mm256_lddqu_si256(ptr+1);
+		__m256i s2=_mm256_lddqu_si256(ptr+2);
+		__m256i s3=_mm256_lddqu_si256(ptr+3);
+		__m256i u0=_mm256_srli_epi64(s0,1);
+		__m256i u1=_mm256_srli_epi64(s1,3);
+		__m256i u2=_mm256_srli_epi64(s2,1);
+		__m256i u3=_mm256_srli_epi64(s3,3);
+		__m256i t0=_mm256_permutevar8x32_epi32(s0,permute_a);
+		__m256i t1=_mm256_permutevar8x32_epi32(s1,permute_b);
+		__m256i t2=_mm256_permutevar8x32_epi32(s2,permute_a);
+		__m256i t3=_mm256_permutevar8x32_epi32(s3,permute_b);
+		s0=_mm256_add_epi64(t0,u0);
+		s1=_mm256_add_epi64(t1,u1);
+		s2=_mm256_add_epi64(t2,u2);
+		s3=_mm256_add_epi64(t3,u3);
+		_mm256_storeu_si256(ptr+0,s0);
+		_mm256_storeu_si256(ptr+1,s1);
+		_mm256_storeu_si256(ptr+2,s2);
+		_mm256_storeu_si256(ptr+3,s3);
+		_mm256_storeu_si256(ptr+4,_mm256_xor_si256(u0,t1));
+		_mm256_storeu_si256(ptr+5,_mm256_xor_si256(u2,t3));
+		_mm256_storeu_si256(ptr+6,_mm256_xor_si256(s0,s3));
+		_mm256_storeu_si256(ptr+7,_mm256_xor_si256(s2,s1));
+		neat->_prng_state.count=64;
+	}
+	neat->_prng_state.count--;
+	return neat->_prng_state.data[neat->_prng_state.count];
 }
 
 
 
-static inline float _random_uniform_rescaled(void){
-	return (float)(((int32_t)_random_uint32())>>7)*0x1p-24f;
+static __attribute__((noinline)) float _random_uniform(neat_t* neat){
+	return (float)(((int32_t)_random_uint32(neat))>>7)*0x1p-24f;
 }
 
 
@@ -64,12 +96,24 @@ static inline unsigned int _get_last_bit_index(unsigned int x){
 
 
 
-static inline unsigned int _random_int_fast(unsigned int mask,unsigned int max){
-	unsigned int out=_random_uint32()&mask;
+static inline unsigned int _random_int_mask(neat_t* neat,unsigned int mask,unsigned int max){
+	unsigned int out=_random_uint32(neat)&mask;
 	if (out>=max){
 		out-=max;
 	}
 	return out;
+}
+
+
+
+static inline unsigned int _random_int(neat_t* neat,unsigned int max){
+	unsigned int mask=max-1;
+	mask|=mask>>1;
+	mask|=mask>>2;
+	mask|=mask>>4;
+	mask|=mask>>8;
+	mask|=mask>>16;
+	return _random_int_mask(neat,mask,max);
 }
 
 
@@ -80,6 +124,10 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->population=population;
 	out->_last_average_fitness_score=-1e8f;
 	out->fitness_score_callback=fitness_score_callback;
+	for (unsigned int i=0;i<64;i++){
+		out->_prng_state.data[i]=(rand()&0xff)|((rand()&0xff)<<8)|((rand()&0xff)<<16)|((rand()&0xff)<<24);
+	}
+	out->_prng_state.count=64;
 	out->genomes=malloc(population*sizeof(neat_genome_t));
 	out->_node_data=malloc(population*MAX_NODE_COUNT*sizeof(neat_genome_node_t));
 	out->_edge_data=malloc(population*MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t)+31);
@@ -96,7 +144,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 			node_data_ptr->bias=0.0f;
 			node_data_ptr++;
 			for (unsigned int k=0;k<node_count;k++){
-				edge_data_ptr->weight=_random_uniform_rescaled();
+				edge_data_ptr->weight=_random_uniform(out);
 				edge_data_ptr++;
 			}
 		}
@@ -131,8 +179,12 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 		}
 		values+=8;
 	}
-	for (unsigned int i=neat->input_count;i<((neat->input_count+7)&0xfffffff8);i++){
-		node_values[i]=0.0f;
+	if (neat->input_count&7){
+		unsigned int i=8-(neat->input_count&7);
+		do{
+			i--;
+			node_values[i+neat->input_count]=0.0f;
+		} while (i);
 	}
 	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
@@ -200,10 +252,10 @@ const neat_genome_t* neat_update(neat_t* neat){
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
 	unsigned int surviving_genome_mask=(1<<(_get_last_bit_index(surviving_genome_count)+1))-1;
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
-		const neat_genome_t* random_genome=neat->genomes+_random_int_fast(surviving_genome_mask,surviving_genome_count);
+		const neat_genome_t* random_genome=neat->genomes+_random_int_mask(neat,surviving_genome_mask,surviving_genome_count);
 		child->node_count=random_genome->node_count;
-		if (stale||(_random_uint32()&1)){
-			unsigned int action=_random_uint32()&MUTATION_ACTION_MASK;
+		if (stale||(_random_uint32(neat)&1)){
+			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=NODE_ADD_CHANCE&&random_genome->node_count<MAX_NODE_COUNT){
 				child->node_count+=8;
 				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
@@ -243,37 +295,37 @@ const neat_genome_t* neat_update(neat_t* neat){
 					}
 				}
 				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
-					(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight+=_random_uniform_rescaled();
+					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight+=_random_uniform(neat);
 				}
 				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE){
 _mutate_random_edge:
-					(child->edges+(_random_uint32()%(random_genome->node_count*random_genome->node_count)))->weight=_random_uniform_rescaled();
+					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight=_random_uniform(neat);
 				}
 				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE){
-					(child->nodes+(_random_uint32()%(random_genome->node_count)))->bias+=_random_uniform_rescaled();
+					(child->nodes+_random_int(neat,random_genome->node_count))->bias+=_random_uniform(neat);
 				}
 				else{
-					(child->nodes+(_random_uint32()%(random_genome->node_count)))->bias=_random_uniform_rescaled();
+					(child->nodes+_random_int(neat,random_genome->node_count))->bias=_random_uniform(neat);
 				}
 			}
 		}
 		else{
-			const neat_genome_t* second_random_genome=neat->genomes+_random_int_fast(surviving_genome_mask,surviving_genome_count);
+			const neat_genome_t* second_random_genome=neat->genomes+_random_int_mask(neat,surviving_genome_mask,surviving_genome_count);
 			unsigned int k=0;
-			unsigned int random_value=_random_uint32();
+			unsigned int random_value=_random_uint32(neat);
 			for (unsigned int i=0;i<random_genome->node_count;i++){
 				for (unsigned int j=0;j<random_genome->node_count;j++){
 					(child->edges+k)->weight=(i<second_random_genome->node_count&&j<second_random_genome->node_count&&(random_value&1)?random_genome->edges+k:second_random_genome->edges+i*second_random_genome->node_count+j)->weight;
 					k++;
 					random_value>>=1;
 					if (!random_value){
-						random_value=_random_uint32();
+						random_value=_random_uint32(neat);
 					}
 				}
 				(child->nodes+i)->bias=((i<second_random_genome->node_count&&(random_value&1)?second_random_genome:random_genome)->nodes+i)->bias;
 				random_value>>=1;
 				if (!random_value){
-					random_value=_random_uint32();
+					random_value=_random_uint32(neat);
 				}
 			}
 		}
