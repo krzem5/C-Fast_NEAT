@@ -103,15 +103,20 @@ void neat_deinit(const neat_t* neat){
 
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
 	AVX2_ALIGN float node_values[MAX_NODE_COUNT];
-	float* values=node_values+(neat->input_count&0xfffffff8);
+	float* values=node_values;
 	__m256 zero=_mm256_setzero_ps();
-	for (unsigned int i=neat->input_count>>3;i<genome->node_count>>3;i++){
-		_mm256_store_ps(values,zero);
+	for (unsigned int i=0;i<genome->node_count;i+=8){
+		if (i<neat->input_count){
+			_mm256_store_ps(values,_mm256_loadu_ps(in));
+			in+=8;
+		}
+		else{
+			_mm256_store_ps(values,zero);
+		}
 		values+=8;
 	}
-	for (unsigned int i=0;i<neat->input_count;i++){
-		node_values[i]=*in;
-		in++;
+	for (unsigned int i=neat->input_count;i<((neat->input_count+7)&0xfffffff8);i++){
+		node_values[i]=0.0f;
 	}
 	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
