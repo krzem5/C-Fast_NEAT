@@ -3,17 +3,6 @@
 #include <neat.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
-
-
-
-#ifdef _MSC_VER
-#define AVX2_ALIGN __declspec(align(256))
-#else
-#define AVX2_ALIGN __attribute__((aligned(256)))
-#endif
 
 
 
@@ -65,13 +54,7 @@ static inline float _vector_sum(__m256 sum256){
 
 
 static inline unsigned int _get_last_bit_index(unsigned int x){
-#ifdef _MSC_VER
-	unsigned int out;
-	_BitScanReverse(&out,x);
-	return out;
-#else
 	return 31-__builtin_clz(x);
-#endif
 }
 
 
@@ -128,7 +111,7 @@ void neat_deinit(const neat_t* neat){
 
 
 void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
-	AVX2_ALIGN float node_values[MAX_NODE_COUNT];
+	__attribute__((aligned(256))) float node_values[MAX_NODE_COUNT];
 	float* values=node_values;
 	__m256 zero=_mm256_setzero_ps();
 	for (unsigned int i=0;i<genome->node_count;i+=8){
