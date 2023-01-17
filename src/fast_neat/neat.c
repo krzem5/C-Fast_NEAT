@@ -90,8 +90,13 @@ static inline float _vector_sum(__m256 sum256){
 
 
 
-static inline unsigned int _get_last_bit_index(unsigned int x){
-	return 31-__builtin_clz(x);
+static inline unsigned int _get_number_mask(unsigned int n){
+	n--;
+	n|=n>>1;
+	n|=n>>2;
+	n|=n>>4;
+	n|=n>>8;
+	return n|(n>>16);
 }
 
 
@@ -107,13 +112,7 @@ static inline unsigned int _random_int_mask(neat_t* neat,unsigned int mask,unsig
 
 
 static inline unsigned int _random_int(neat_t* neat,unsigned int max){
-	unsigned int mask=max-1;
-	mask|=mask>>1;
-	mask|=mask>>2;
-	mask|=mask>>4;
-	mask|=mask>>8;
-	mask|=mask>>16;
-	return _random_int_mask(neat,mask,max);
+	return _random_int_mask(neat,_get_number_mask(max),max);
 }
 
 
@@ -250,7 +249,7 @@ const neat_genome_t* neat_update(neat_t* neat){
 		child++;
 	}
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
-	unsigned int surviving_genome_mask=(1<<(_get_last_bit_index(surviving_genome_count)+1))-1;
+	unsigned int surviving_genome_mask=_get_number_mask(surviving_genome_count);
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+_random_int_mask(neat,surviving_genome_mask,surviving_genome_count);
 		child->node_count=random_genome->node_count;
