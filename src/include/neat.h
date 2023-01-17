@@ -1,6 +1,11 @@
 #ifndef __NEAT_H__
 #define __NEAT_H__
+#include <pthread.h>
 #include <stdint.h>
+
+
+
+#define NEAT_THREAD_COUNT 4
 
 
 
@@ -25,14 +30,25 @@ typedef struct _NEAT_GENOME{
 
 
 
+typedef struct _NEAT_THREAD_DATA{
+	struct _NEAT* neat;
+	unsigned int index;
+	float fitness_score_sum;
+	pthread_t handle;
+} neat_thread_data_t;
+
+
+
 typedef struct _NEAT{
 	unsigned int input_count;
 	unsigned int output_count;
 	unsigned int population;
 	float _last_average_fitness_score;
 	neat_genome_t* genomes;
+	neat_thread_data_t _threads[NEAT_THREAD_COUNT];
 	neat_genome_node_t* _node_data;
 	neat_genome_edge_t* _edge_data;
+	_Atomic unsigned int _thread_counter;
 } neat_t;
 
 

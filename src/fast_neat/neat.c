@@ -69,6 +69,16 @@ static inline unsigned int _random_int_fast(unsigned int mask,unsigned int max){
 
 
 
+static void* _thread(void* arg){
+	neat_thread_data_t* data=arg;
+	neat_t* neat=data->neat;
+	neat->_thread_counter++;
+	printf("%u\n",data->index);
+	return NULL;
+}
+
+
+
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_t* out){
 	out->input_count=input_count;
 	out->output_count=output_count;
@@ -98,6 +108,13 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		edge_data_ptr+=(MAX_NODE_COUNT-node_count)*(MAX_NODE_COUNT-node_count);
 		genome++;
 	}
+	out->_thread_counter=0;
+	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
+		(out->_threads+i)->neat=out;
+		(out->_threads+i)->index=i;
+		pthread_create(&((out->_threads+i)->handle),NULL,_thread,out->_threads+i);
+	}
+	while (out->_thread_counter<NEAT_THREAD_COUNT);
 }
 
 
@@ -106,6 +123,9 @@ void neat_deinit(const neat_t* neat){
 	free(neat->genomes);
 	free(neat->_edge_data);
 	free(neat->_node_data);
+	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
+		pthread_join((neat->_threads+i)->handle,NULL);
+	}
 }
 
 
