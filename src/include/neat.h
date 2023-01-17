@@ -105,7 +105,7 @@ void neat_deinit_model(const neat_model_t* model);
 
 
 
-void neat_save_model(const neat_model_t* model,const char* file_path);
+_Bool neat_save_model(const neat_model_t* model,const char* file_path);
 
 
 

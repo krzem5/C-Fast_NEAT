@@ -369,8 +369,11 @@ void neat_deinit_model(const neat_model_t* model){
 
 
 
-void neat_save_model(const neat_model_t* model,const char* file_path){
+_Bool neat_save_model(const neat_model_t* model,const char* file_path){
 	FILE* file=fopen(file_path,"wb");
+	if (!file){
+		return 0;
+	}
 	neat_model_file_header_t header={
 		model->input_count,
 		model->output_count,
@@ -400,6 +403,9 @@ void neat_save_model(const neat_model_t* model,const char* file_path){
 		}
 		edge++;
 	}
+	fclose(file);
+	return 1;
 _error:
 	fclose(file);
+	return 0;
 }
