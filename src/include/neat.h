@@ -5,7 +5,7 @@
 
 
 
-#define NEAT_THREAD_COUNT 4
+#define NEAT_THREAD_COUNT 16
 
 
 
@@ -54,6 +54,7 @@ typedef struct _NEAT{
 	neat_genome_node_t* _node_data;
 	neat_genome_edge_t* _edge_data;
 	_Atomic unsigned int _thread_counter;
+	_Atomic unsigned int _thread_dispatch_index;
 	float _fitness_score_sum;
 	unsigned int _surviving_genome_mask;
 	unsigned int _surviving_genome_count;

@@ -9,11 +9,16 @@
 #define MAX_NODE_COUNT 512
 
 #define NODE_ADD_CHANCE 1
-#define WEIGHT_ADJUST_CHANCE 400
-#define WEIGHT_SET_CHANCE 100
-#define BIAS_ADJUST_CHANCE 300
-#define BIAS_SET_CHANCE 100
+#define WEIGHT_ADJUST_CHANCE 454
+#define WEIGHT_SET_CHANCE 114
+#define BIAS_ADJUST_CHANCE 340
+#define BIAS_SET_CHANCE 114
+#define MUTATION_ACTION_MASK 0x3ff
 #define MAX_STALE_FITNESS_DIFFERENCE 1e-6f
+
+#if NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE!=MUTATION_ACTION_MASK
+#error Sum of mutation chances must be equal to MUTATION_ACTION_MASK
+#endif
 
 
 
@@ -78,7 +83,7 @@ static void _process_data_chunk(neat_thread_data_t* data){
 		const neat_genome_t* random_genome=neat->genomes+_random_int_fast(neat->_surviving_genome_mask,neat->_surviving_genome_count);
 		child->node_count=random_genome->node_count;
 		if (neat->_stale||(_random_uint32()&1)){
-			unsigned int action=_random_uint32()%(NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE);
+			unsigned int action=_random_uint32()&MUTATION_ACTION_MASK;
 			if (action<=NODE_ADD_CHANCE&&random_genome->node_count<MAX_NODE_COUNT){
 				child->node_count+=8;
 				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
@@ -167,8 +172,16 @@ static void* _thread_task(void* arg){
 	neat_t* neat=data->neat;
 	printf("Start %u\n",data->index);
 	neat->_thread_counter++;
-	return NULL;
-
+	unsigned int index=0;
+	while (1){
+		while (neat->_thread_dispatch_index<=index);
+		if (!neat->genomes){
+			return NULL;
+		}
+		index=neat->_thread_dispatch_index;
+		_process_data_chunk(data);
+		neat->_thread_counter++;
+	}
 }
 
 
@@ -204,6 +217,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		genome++;
 	}
 	out->_thread_counter=0;
+	out->_thread_dispatch_index=0;
 	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
 		(out->_threads+i)->neat=out;
 		(out->_threads+i)->index=i;
@@ -220,8 +234,10 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 
 void neat_deinit(neat_t* neat){
 	free(neat->genomes);
+	neat->genomes=NULL;
 	free(neat->_edge_data);
 	free(neat->_node_data);
+	neat->_thread_dispatch_index=0xffffffff;
 	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
 		pthread_join((neat->_threads+i)->handle,NULL);
 	}
@@ -311,8 +327,11 @@ const neat_genome_t* neat_update(neat_t* neat){
 	}
 	neat->_surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
 	neat->_surviving_genome_mask=(1<<(_get_last_bit_index(neat->_surviving_genome_count)+1))-1;
+	neat->_thread_counter=0;
+	neat->_thread_dispatch_index++;
+	_process_data_chunk(neat->_threads);
+	while (neat->_thread_counter<NEAT_THREAD_COUNT-1);
 	for (unsigned int i=0;i<NEAT_THREAD_COUNT;i++){
-		_process_data_chunk(neat->_threads+i);
 		neat->_fitness_score_sum+=(neat->_threads+i)->fitness_score_sum;
 	}
 	return best_genome;
