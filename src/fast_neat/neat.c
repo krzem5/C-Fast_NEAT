@@ -189,7 +189,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		__m256 sum256=_mm256_setzero_ps();
 		values=node_values;
-		for (unsigned int j=0;j<genome->node_count>>3;j++){
+		for (unsigned int j=0;j<(i+7)>>3;j++){
 			sum256=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256);
 			weights+=8;
 			values+=8;
@@ -402,4 +402,26 @@ void neat_save_model(const neat_model_t* model,const char* file_path){
 	}
 _error:
 	fclose(file);
+}
+
+
+
+void neat_array_evalutor_init(unsigned int count,neat_array_evalutor_t* out){
+	if (count&3){
+		printf("[neat_array_evalutor_init] 'count' must be a multiple of 4 (was %u)\n",count);
+		return;
+	}
+	out->count=count;
+	out->ptr=malloc(count*MAX_NODE_COUNT*sizeof(float)+31);
+	out->data=(float*)((((uintptr_t)out->ptr)+31)&0xffffffffffffffe0ull);
+}
+
+
+
+void neat_array_evalutor_deinit(neat_array_evalutor_t* evaluator){
+	if (!evaluator->count){
+		return;
+	}
+	evaluator->count=0;
+	free(evaluator->ptr);
 }
