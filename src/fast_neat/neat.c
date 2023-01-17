@@ -39,44 +39,59 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 
 
 
-static unsigned int _random_uint32(neat_t* neat){
-	if (!neat->_prng_state.count){
-		__m256i* ptr=(__m256i*)(neat->_prng_state.data);
-		__m256i permute_a=_mm256_set_epi32(4,3,2,1,0,7,6,5);
-		__m256i permute_b=_mm256_set_epi32(2,1,0,7,6,5,4,3);
-		__m256i s0=_mm256_lddqu_si256(ptr+0);
-		__m256i s1=_mm256_lddqu_si256(ptr+1);
-		__m256i s2=_mm256_lddqu_si256(ptr+2);
-		__m256i s3=_mm256_lddqu_si256(ptr+3);
-		__m256i u0=_mm256_srli_epi64(s0,1);
-		__m256i u1=_mm256_srli_epi64(s1,3);
-		__m256i u2=_mm256_srli_epi64(s2,1);
-		__m256i u3=_mm256_srli_epi64(s3,3);
-		__m256i t0=_mm256_permutevar8x32_epi32(s0,permute_a);
-		__m256i t1=_mm256_permutevar8x32_epi32(s1,permute_b);
-		__m256i t2=_mm256_permutevar8x32_epi32(s2,permute_a);
-		__m256i t3=_mm256_permutevar8x32_epi32(s3,permute_b);
-		s0=_mm256_add_epi64(t0,u0);
-		s1=_mm256_add_epi64(t1,u1);
-		s2=_mm256_add_epi64(t2,u2);
-		s3=_mm256_add_epi64(t3,u3);
-		_mm256_storeu_si256(ptr+0,s0);
-		_mm256_storeu_si256(ptr+1,s1);
-		_mm256_storeu_si256(ptr+2,s2);
-		_mm256_storeu_si256(ptr+3,s3);
-		_mm256_storeu_si256(ptr+4,_mm256_xor_si256(u0,t1));
-		_mm256_storeu_si256(ptr+5,_mm256_xor_si256(u2,t3));
-		_mm256_storeu_si256(ptr+6,_mm256_xor_si256(s0,s3));
-		_mm256_storeu_si256(ptr+7,_mm256_xor_si256(s2,s1));
-		neat->_prng_state.count=64;
+static void _random_ensure_count(neat_t* neat,unsigned int count){
+	if (neat->_prng_state.count>=count){
+		return;
 	}
+	__m256i* ptr=(__m256i*)(neat->_prng_state.data);
+	__m256i permute_a=_mm256_set_epi32(4,3,2,1,0,7,6,5);
+	__m256i permute_b=_mm256_set_epi32(2,1,0,7,6,5,4,3);
+	__m256i s0=_mm256_lddqu_si256(ptr+0);
+	__m256i s1=_mm256_lddqu_si256(ptr+1);
+	__m256i s2=_mm256_lddqu_si256(ptr+2);
+	__m256i s3=_mm256_lddqu_si256(ptr+3);
+	__m256i u0=_mm256_srli_epi64(s0,1);
+	__m256i u1=_mm256_srli_epi64(s1,3);
+	__m256i u2=_mm256_srli_epi64(s2,1);
+	__m256i u3=_mm256_srli_epi64(s3,3);
+	__m256i t0=_mm256_permutevar8x32_epi32(s0,permute_a);
+	__m256i t1=_mm256_permutevar8x32_epi32(s1,permute_b);
+	__m256i t2=_mm256_permutevar8x32_epi32(s2,permute_a);
+	__m256i t3=_mm256_permutevar8x32_epi32(s3,permute_b);
+	s0=_mm256_add_epi64(t0,u0);
+	s1=_mm256_add_epi64(t1,u1);
+	s2=_mm256_add_epi64(t2,u2);
+	s3=_mm256_add_epi64(t3,u3);
+	_mm256_storeu_si256(ptr+0,s0);
+	_mm256_storeu_si256(ptr+1,s1);
+	_mm256_storeu_si256(ptr+2,s2);
+	_mm256_storeu_si256(ptr+3,s3);
+	_mm256_storeu_si256(ptr+4,_mm256_xor_si256(u0,t1));
+	_mm256_storeu_si256(ptr+5,_mm256_xor_si256(u2,t3));
+	_mm256_storeu_si256(ptr+6,_mm256_xor_si256(s0,s3));
+	_mm256_storeu_si256(ptr+7,_mm256_xor_si256(s2,s1));
+	neat->_prng_state.count=64;
+}
+
+
+
+static inline unsigned int _random_uint32(neat_t* neat){
+	_random_ensure_count(neat,1);
 	neat->_prng_state.count--;
 	return neat->_prng_state.data[neat->_prng_state.count];
 }
 
 
 
-static __attribute__((noinline)) float _random_uniform(neat_t* neat){
+static inline const unsigned int* _random_uint256_ptr(neat_t* neat){
+	_random_ensure_count(neat,8);
+	neat->_prng_state.count-=8;
+	return neat->_prng_state.data+neat->_prng_state.count;
+}
+
+
+
+static inline float _random_uniform(neat_t* neat){
 	return (float)(((int32_t)_random_uint32(neat))>>7)*0x1p-24f;
 }
 
@@ -310,22 +325,43 @@ _mutate_random_edge:
 		}
 		else{
 			const neat_genome_t* second_random_genome=neat->genomes+_random_int_mask(neat,surviving_genome_mask,surviving_genome_count);
-			unsigned int k=0;
-			unsigned int random_value=_random_uint32(neat);
-			for (unsigned int i=0;i<random_genome->node_count;i++){
-				for (unsigned int j=0;j<random_genome->node_count;j++){
-					(child->edges+k)->weight=(i<second_random_genome->node_count&&j<second_random_genome->node_count&&(random_value&1)?random_genome->edges+k:second_random_genome->edges+i*second_random_genome->node_count+j)->weight;
-					k++;
-					random_value>>=1;
-					if (!random_value){
-						random_value=_random_uint32(neat);
+			unsigned int min_node_count=(second_random_genome->node_count<random_genome->node_count?second_random_genome:random_genome)->node_count;
+			const float* first_edges=(const float*)(random_genome->edges);
+			float* child_edges=(float*)(child->edges);
+			for (unsigned int i=0;i<min_node_count;i++){
+				const float* second_edges=(const float*)(second_random_genome->edges+i*second_random_genome->node_count);
+				__m256i random_vector=_mm256_undefined_si256();
+				for (unsigned int j=0;j<min_node_count;j+=8){
+					if (!(j&63)){
+						random_vector=_mm256_loadu_si256((const __m256i*)_random_uint256_ptr(neat));
 					}
+					_mm256_store_ps(child_edges,_mm256_blendv_ps(_mm256_loadu_ps(first_edges),_mm256_loadu_ps(second_edges),_mm256_castsi256_ps(random_vector)));
+					child_edges+=8;
+					first_edges+=8;
+					second_edges+=8;
+					random_vector=_mm256_slli_epi32(random_vector,1);
 				}
-				(child->nodes+i)->bias=((i<second_random_genome->node_count&&(random_value&1)?second_random_genome:random_genome)->nodes+i)->bias;
+				for (unsigned int j=min_node_count;j<random_genome->node_count;j+=8){
+					_mm256_store_ps(child_edges,_mm256_loadu_ps(first_edges));
+					child_edges+=8;
+					first_edges+=8;
+				}
+			}
+			unsigned int random_value=_random_uint32(neat);
+			for (unsigned int i=0;i<min_node_count;i++){
+				(child->nodes+i)->bias=(((random_value&1)?second_random_genome:random_genome)->nodes+i)->bias;
 				random_value>>=1;
 				if (!random_value){
 					random_value=_random_uint32(neat);
 				}
+			}
+			for (unsigned int i=min_node_count;i<random_genome->node_count;i++){
+				for (unsigned int j=0;j<random_genome->node_count;j+=8){
+					_mm256_store_ps(child_edges,_mm256_loadu_ps(first_edges));
+					child_edges+=8;
+					first_edges+=8;
+				}
+				(child->nodes+i)->bias=(random_genome->nodes+i)->bias;
 			}
 		}
 		neat->_fitness_score_sum-=child->fitness_score;
