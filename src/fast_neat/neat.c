@@ -115,6 +115,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		pthread_create(&((out->_threads+i)->handle),NULL,_thread,out->_threads+i);
 	}
 	while (out->_thread_counter<NEAT_THREAD_COUNT);
+	out->_fitness_score_sum=0.0f;
 }
 
 
@@ -169,18 +170,12 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 const neat_genome_t* neat_update(neat_t* neat,float (*fitness_score_callback)(const neat_t*,const neat_genome_t*)){
-	neat_genome_t* genome=neat->genomes;
-	float average=0;
-	for (unsigned int i=0;i<neat->population;i++){
-		average+=genome->fitness_score;
-		genome++;
-	}
-	average/=neat->population;
+	float average=neat->_fitness_score_sum/neat->population;
 	_Bool stale=fabs(neat->_last_average_fitness_score-average)<MAX_STALE_FITNESS_DIFFERENCE;
 	neat->_last_average_fitness_score=average;
 	neat_genome_t* start_genome=neat->genomes;
-	neat_genome_t* end_genome=genome;
-	genome=start_genome;
+	neat_genome_t* end_genome=neat->genomes+neat->population;
+	neat_genome_t* genome=start_genome;
 	for (unsigned int i=0;i<neat->population;i++){
 		if (genome->fitness_score>=average){
 			if (start_genome==genome){
@@ -296,7 +291,9 @@ _mutate_random_edge:
 				}
 			}
 		}
+		neat->_fitness_score_sum-=child->fitness_score;
 		child->fitness_score=fitness_score_callback(neat,child);
+		neat->_fitness_score_sum+=child->fitness_score;
 		child++;
 	}
 	return best_genome;

@@ -49,6 +49,7 @@ typedef struct _NEAT{
 	neat_genome_node_t* _node_data;
 	neat_genome_edge_t* _edge_data;
 	_Atomic unsigned int _thread_counter;
+	float _fitness_score_sum;
 } neat_t;
 
 
