@@ -81,14 +81,6 @@ typedef struct _NEAT_MODEL{
 
 
 
-typedef struct _NEAT_ARRAY_EVALUATOR{
-	unsigned int count;
-	float* data;
-	float* ptr;
-} neat_array_evalutor_t;
-
-
-
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_fitness_score_callback_t fitness_score_callback,neat_t* out);
 
 
@@ -118,14 +110,6 @@ void neat_deinit_model(const neat_model_t* model);
 
 
 void neat_save_model(const neat_model_t* model,const char* file_path);
-
-
-
-void neat_array_evalutor_init(unsigned int count,neat_array_evalutor_t* out);
-
-
-
-void neat_array_evalutor_deinit(neat_array_evalutor_t* evaluator);
 
 
 

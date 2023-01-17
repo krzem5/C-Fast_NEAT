@@ -403,25 +403,3 @@ void neat_save_model(const neat_model_t* model,const char* file_path){
 _error:
 	fclose(file);
 }
-
-
-
-void neat_array_evalutor_init(unsigned int count,neat_array_evalutor_t* out){
-	if (count&3){
-		printf("[neat_array_evalutor_init] 'count' must be a multiple of 4 (was %u)\n",count);
-		return;
-	}
-	out->count=count;
-	out->ptr=malloc(count*MAX_NODE_COUNT*sizeof(float)+31);
-	out->data=(float*)((((uintptr_t)out->ptr)+31)&0xffffffffffffffe0ull);
-}
-
-
-
-void neat_array_evalutor_deinit(neat_array_evalutor_t* evaluator){
-	if (!evaluator->count){
-		return;
-	}
-	evaluator->count=0;
-	free(evaluator->ptr);
-}
