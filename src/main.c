@@ -26,7 +26,7 @@ int main(void){
 	unsigned int i=0;
 	for (;i<10000;i++){
 		best=neat_update(&neat);
-		// printf("%.2f%%\n",best->fitness_score*100);
+		printf("%.2f%%\n",best->fitness_score*100);
 		if (best->fitness_score>=example->max_fitness_score){
 			break;
 		}

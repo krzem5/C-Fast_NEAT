@@ -142,9 +142,8 @@ static inline unsigned int _random_int(neat_t* neat,unsigned int max){
 
 
 static inline float _activation_function(float x){
-	x*=ACTIVATION_FUNCTION_SCALE;
 	float_data_t data={
-		.f=x
+		.f=x*ACTIVATION_FUNCTION_SCALE
 	};
 	unsigned int sign_mask=data.v&0x80000000;
 	data.v&=0x7fffffff;
@@ -154,9 +153,9 @@ static inline float _activation_function(float x){
 	float x2=x+1;
 	data.f=x2;
 	data.v=0x7ef127ea-data.v;
-	data.f*=x*(2-x2*data.f);
+	float tmp=2-x2*data.f;
 	data.v|=sign_mask;
-	return data.f;
+	return data.f*tmp*x;
 }
 
 
