@@ -150,11 +150,11 @@ static inline float _activation_function(float x){
 	data.v&=0x7fffffff;
 	x=data.f;
 	float x_sq=x*x;
-	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f);
+	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f/*+x*x_sq*x_sq*17.0f/315.0f*/);
 	float x2=x+1;
 	data.f=x2;
 	data.v=0x7ef127ea-data.v;
-	data.f*=x*(2-x*data.f);
+	data.f*=x*(2-x2*data.f);
 	data.v|=sign_mask;
 	return data.f;
 	// return copysignf(sqrtf(fabs(x)),x);

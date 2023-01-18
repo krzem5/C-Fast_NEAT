@@ -16,7 +16,8 @@ static unsigned long int get_time(void){
 
 
 int main(void){
-	srand(get_time()&0xffffffff);
+	unsigned int seed=get_time()&0xffffffff;
+	srand(seed);
 	const example_t* example=example_get("xor3");
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,example->fitness_score_callback,&neat);
@@ -31,7 +32,7 @@ int main(void){
 		}
 	}
 	double delta_time=(get_time()-start)*1e-9;
-	printf("Time: %.3fs, Iterations: %u, Time per Iteration: %.6fs\n",delta_time,i,delta_time/i);
+	printf("Seed: %.8x, Time: %.3fs, Iterations: %u, Time per Iteration: %.6fs\n",seed,delta_time,i,delta_time/i);
 	example->end_callback(&neat,best);
 	neat_model_t model;
 	neat_extract_model(&neat,best,&model);
