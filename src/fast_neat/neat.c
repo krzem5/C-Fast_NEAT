@@ -39,6 +39,13 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 
 
 
+typedef union _FLOAT_DATA{
+	float f;
+	unsigned int v;
+} float_data_t;
+
+
+
 static void _random_ensure_count(neat_t* neat,unsigned int count){
 	if (neat->_prng_state.count>=count){
 		return;
@@ -133,7 +140,36 @@ static inline unsigned int _random_int(neat_t* neat,unsigned int max){
 
 
 static inline float _activation_function(float x){
-	return 1.1f*x/(0.8f+fabs(x));
+	// return tanh(x);
+	// x+=copysign(2*x*x/3,x)+4*x*x*x/3+2*x*x*x*x*x/15;
+	// return x/(1+fabs(x));
+	float_data_t data={
+		.f=x
+	};
+	unsigned int sign_mask=data.v&0x80000000;
+	data.v&=0x7fffffff;
+	x=data.f;
+	float x_sq=x*x;
+	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f);
+	float x2=x+1;
+	data.f=x2;
+	data.v=0x7ef127ea-data.v;
+	data.f*=x*(2-x*data.f);
+	data.v|=sign_mask;
+	return data.f;
+	// return copysignf(sqrtf(fabs(x)),x);
+	// float x_sq=x*x;
+	// float x_cb=x_sq*x;
+	// x+=2*x_cb+0.2f*x_sq*x_cb;
+	// float y=1+fabs(x);
+	// union{
+	// 	float f;
+	// 	unsigned int v;
+	// } data={
+	// 	.f=y
+	// };
+	// data.v=0x7ef127ea-data.v;
+	// return x*data.f*(2-y*data.f);
 }
 
 
@@ -221,11 +257,13 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		__m256 sum256=_mm256_setzero_ps();
 		values=node_values;
-		for (unsigned int j=0;j<i;j+=8){
+		unsigned int j=0;
+		for (;j<i;j+=8){
 			sum256=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256);
 			weights+=8;
 			values+=8;
 		}
+		weights+=genome->node_count-j;
 		node_values[i]=_activation_function(_vector_sum(sum256)+(genome->nodes+i)->bias);
 		if (i>=genome->node_count-neat->output_count){
 			*out=node_values[i];
