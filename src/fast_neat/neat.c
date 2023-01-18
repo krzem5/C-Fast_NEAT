@@ -194,20 +194,20 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 		values+=8;
 	}
 	if (neat->input_count&7){
-		switch (8-(neat->input_count&7)){
-			case 7:
+		switch (neat->input_count&7){
+			case 1:
 				node_values[neat->input_count+6]=0.0f;
-			case 6:
+			case 2:
 				node_values[neat->input_count+5]=0.0f;
-			case 5:
+			case 3:
 				node_values[neat->input_count+4]=0.0f;
 			case 4:
 				node_values[neat->input_count+3]=0.0f;
-			case 3:
+			case 5:
 				node_values[neat->input_count+2]=0.0f;
-			case 2:
+			case 6:
 				node_values[neat->input_count+1]=0.0f;
-			case 1:
+			case 7:
 				node_values[neat->input_count]=0.0f;
 		}
 	}
