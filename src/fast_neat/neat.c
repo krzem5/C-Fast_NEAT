@@ -132,6 +132,13 @@ static inline unsigned int _random_int(neat_t* neat,unsigned int max){
 
 
 
+static inline float _activation_function(float x){
+	x+=x*x*x;
+	return x/(1+fabs(x));
+}
+
+
+
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_fitness_score_callback_t fitness_score_callback,neat_t* out){
 	out->input_count=input_count;
 	out->output_count=output_count;
@@ -220,9 +227,7 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 			weights+=8;
 			values+=8;
 		}
-		float sum=_vector_sum(sum256)+(genome->nodes+i)->bias;
-		sum+=sum*sum*sum;
-		node_values[i]=sum/(1+fabsf(sum));
+		node_values[i]=_activation_function(_vector_sum(sum256)+(genome->nodes+i)->bias);
 		if (i>=genome->node_count-neat->output_count){
 			*out=node_values[i];
 			out++;
@@ -319,7 +324,7 @@ const neat_genome_t* neat_update(neat_t* neat){
 					edges+=8;
 				}
 				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
-_mutate_random_edge:1
+_mutate_random_edge:
 					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight+=_random_uniform(neat);
 				}
 				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE){
