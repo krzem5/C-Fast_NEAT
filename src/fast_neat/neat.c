@@ -140,9 +140,6 @@ static inline unsigned int _random_int(neat_t* neat,unsigned int max){
 
 
 static inline float _activation_function(float x){
-	// return tanh(x);
-	// x+=copysign(2*x*x/3,x)+4*x*x*x/3+2*x*x*x*x*x/15;
-	// return x/(1+fabs(x));
 	float_data_t data={
 		.f=x
 	};
@@ -150,26 +147,13 @@ static inline float _activation_function(float x){
 	data.v&=0x7fffffff;
 	x=data.f;
 	float x_sq=x*x;
-	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f/*+x*x_sq*x_sq*17.0f/315.0f*/);
+	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f);
 	float x2=x+1;
 	data.f=x2;
 	data.v=0x7ef127ea-data.v;
 	data.f*=x*(2-x2*data.f);
 	data.v|=sign_mask;
 	return data.f;
-	// return copysignf(sqrtf(fabs(x)),x);
-	// float x_sq=x*x;
-	// float x_cb=x_sq*x;
-	// x+=2*x_cb+0.2f*x_sq*x_cb;
-	// float y=1+fabs(x);
-	// union{
-	// 	float f;
-	// 	unsigned int v;
-	// } data={
-	// 	.f=y
-	// };
-	// data.v=0x7ef127ea-data.v;
-	// return x*data.f*(2-y*data.f);
 }
 
 

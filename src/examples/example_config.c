@@ -24,7 +24,7 @@ static const example_t _example_data[]={
 	DECLARE_EXAMPLE(language,312,2,500,0.999f),
 	DECLARE_EXAMPLE(rock_paper_scissors,1,1,500,0.999f),
 	DECLARE_EXAMPLE(xor2,2,1,128,0.999f),
-	DECLARE_EXAMPLE(xor3,3,1,128,0.925f),
+	DECLARE_EXAMPLE(xor3,3,1,128,0.95f),
 	{
 		NULL
 	}
