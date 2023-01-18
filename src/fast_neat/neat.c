@@ -414,6 +414,9 @@ _mutate_random_edge:
 		neat->_fitness_score_sum-=child->fitness_score;
 		child->fitness_score=neat->fitness_score_callback(neat,child);
 		neat->_fitness_score_sum+=child->fitness_score;
+		if (child->fitness_score>best_genome->fitness_score){
+			best_genome=child;
+		}
 		child++;
 	}
 	return best_genome;
