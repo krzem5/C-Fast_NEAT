@@ -11,15 +11,15 @@
 
 #define ACTIVATION_FUNCTION_SCALE 0.5f
 
-#define NODE_ADD_CHANCE 1
-#define WEIGHT_ADJUST_CHANCE 454
-#define WEIGHT_SET_CHANCE 114
-#define BIAS_ADJUST_CHANCE 340
-#define BIAS_SET_CHANCE 114
+#define MUTATION_ACTION_TYPE_ADD_NODES 1
+#define MUTATION_ACTION_TYPE_ADJUST_EDGE 454
+#define MUTATION_ACTION_TYPE_SET_EDGE 114
+#define MUTATION_ACTION_TYPE_ADJUST_NODE 340
+#define MUTATION_ACTION_TYPE_SET_NODE 114
 #define MUTATION_ACTION_MASK 0x3ff
 #define MAX_STALE_FITNESS_DIFFERENCE 1e-6f
 
-#if NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE+BIAS_SET_CHANCE!=MUTATION_ACTION_MASK
+#if MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE!=MUTATION_ACTION_MASK
 #error Sum of mutation chances must be equal to MUTATION_ACTION_MASK
 #endif
 
@@ -310,7 +310,7 @@ const neat_genome_t* neat_update(neat_t* neat){
 		child->node_count=random_genome->node_count;
 		if (stale||(_random_uint32(neat)&1)){
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
-			if (action<=NODE_ADD_CHANCE&&random_genome->node_count<MAX_NODE_COUNT){
+			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_NODE_COUNT){
 				child->node_count+=8;
 				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
 				unsigned int insert_index_start=insert_index_end-7;
@@ -347,14 +347,14 @@ const neat_genome_t* neat_update(neat_t* neat){
 					child_edges+=8;
 					edges+=8;
 				}
-				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
+				if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE){
 _mutate_random_edge:
 					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight+=_random_uniform(neat);
 				}
-				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE){
+				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE){
 					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight=_random_uniform(neat);
 				}
-				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE+BIAS_ADJUST_CHANCE){
+				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE){
 					(child->nodes+_random_int(neat,random_genome->node_count))->bias+=_random_uniform(neat);
 				}
 				else{
