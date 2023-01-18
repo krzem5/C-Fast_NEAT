@@ -133,8 +133,7 @@ static inline unsigned int _random_int(neat_t* neat,unsigned int max){
 
 
 static inline float _activation_function(float x){
-	x+=x*x*x;
-	return x/(1+fabs(x));
+	return 1.1f*x/(0.8f+fabs(x));
 }
 
 
