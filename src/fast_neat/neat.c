@@ -9,6 +9,8 @@
 
 #define MAX_NODE_COUNT 512
 
+#define ACTIVATION_FUNCTION_SCALE 0.5f
+
 #define NODE_ADD_CHANCE 1
 #define WEIGHT_ADJUST_CHANCE 454
 #define WEIGHT_SET_CHANCE 114
@@ -140,6 +142,7 @@ static inline unsigned int _random_int(neat_t* neat,unsigned int max){
 
 
 static inline float _activation_function(float x){
+	x*=ACTIVATION_FUNCTION_SCALE;
 	float_data_t data={
 		.f=x
 	};
