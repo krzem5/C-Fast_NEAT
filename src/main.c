@@ -31,7 +31,7 @@ int main(void){
 		}
 	}
 	double delta_time=(get_time()-start)*1e-9;
-	printf("Iterations: %u, Time: %.3fs, Time per Iteration: %.6fs\n",i,delta_time,delta_time/i);
+	printf("Time: %.3fs, Iterations: %u, Time per Iteration: %.6fs\n",delta_time,i,delta_time/i);
 	example->end_callback(&neat,best);
 	neat_model_t model;
 	neat_extract_model(&neat,best,&model);
