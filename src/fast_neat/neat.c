@@ -319,7 +319,7 @@ const neat_genome_t* neat_update(neat_t* neat){
 					edges+=8;
 				}
 				if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE){
-_mutate_random_edge:
+_mutate_random_edge:1
 					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight+=_random_uniform(neat);
 				}
 				else if (action<=NODE_ADD_CHANCE+WEIGHT_ADJUST_CHANCE+WEIGHT_SET_CHANCE){
