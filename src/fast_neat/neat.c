@@ -207,7 +207,7 @@ void neat_deinit(neat_t* neat){
 
 
 
-void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
+void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
 	__attribute__((aligned(256))) float node_values[MAX_NODE_COUNT];
 	float* values=node_values;
 	__m256 zero=_mm256_setzero_ps();
@@ -244,11 +244,12 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 		__m256 sum256=_mm256_setzero_ps();
 		values=node_values;
 		unsigned int j=0;
-		for (;j<i;j+=8){
+		do{
 			sum256=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256);
+			j+=8;
 			weights+=8;
 			values+=8;
-		}
+		} while (j<i);
 		weights+=genome->node_count-j;
 		node_values[i]=_activation_function(_vector_sum(sum256)+(genome->nodes+i)->bias);
 		if (i>=genome->node_count-neat->output_count){
