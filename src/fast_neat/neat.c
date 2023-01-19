@@ -320,6 +320,7 @@ float neat_update(neat_t* neat){
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+_random_int_mask(neat,surviving_genome_mask,surviving_genome_count);
 		child->node_count=random_genome->node_count;
+		child->_node_count_sq=random_genome->_node_count_sq;
 		if (stale||(mutation_type&1)){
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_NODE_COUNT){
@@ -461,7 +462,7 @@ void neat_extract_model(const neat_t* neat,const neat_genome_t* genome,neat_mode
 	out->node_count=genome->node_count;
 	out->edge_count=0;
 	out->nodes=malloc(out->node_count*sizeof(neat_model_node_t));
-	out->edges=malloc(out->node_count*out->node_count*sizeof(neat_model_edge_t));
+	out->edges=malloc(genome->_node_count_sq*sizeof(neat_model_edge_t));
 	const neat_genome_edge_t* genome_edge=genome->edges;
 	neat_model_edge_t* edge=out->edges;
 	for (unsigned int i=0;i<out->node_count;i++){
