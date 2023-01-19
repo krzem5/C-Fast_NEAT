@@ -462,11 +462,12 @@ _Bool neat_save_model(const neat_model_t* model,const char* file_path){
 	if (!file){
 		return 0;
 	}
+	unsigned int offset=model->node_count*model->input_count;
 	neat_model_file_header_t header={
 		model->input_count,
 		model->output_count,
 		model->node_count,
-		model->edge_count
+		model->edge_count-offset
 	};
 	if (fwrite(&header,sizeof(header),1,file)!=1){
 		goto _error;
@@ -478,8 +479,8 @@ _Bool neat_save_model(const neat_model_t* model,const char* file_path){
 		}
 		node++;
 	}
-	const neat_model_edge_t* edge=model->edges;
-	for (unsigned int i=0;i<model->node_count*model->node_count;i++){
+	const neat_model_edge_t* edge=model->edges+offset;
+	for (unsigned int i=offset;i<model->node_count*model->node_count;i++){
 		if (edge->weight!=0.0f){
 			neat_model_file_edge_t edge_data={
 				i,
