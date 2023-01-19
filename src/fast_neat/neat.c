@@ -101,21 +101,20 @@ static inline const unsigned int* _random_uint256_ptr(neat_t* neat){
 
 
 static inline float _random_float(neat_t* neat){
-	return (float)(((int32_t)_random_uint32(neat))>>7)*0x1p-24f;
+	neat->_prng_state.count--;
+	return (float)(((int32_t)(neat->_prng_state.data[neat->_prng_state.count]))>>7)*0x1p-24f;
 }
 
 
 
-static inline float _vector_sum(__m256 sum256){
-	__m128 sum128=_mm_add_ps(_mm256_castps256_ps128(sum256),_mm256_extractf128_ps(sum256,1));
-	__m128 sum64=_mm_add_ps(sum128,_mm_movehl_ps(sum128,sum128));
-	return _mm_cvtss_f32(_mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0b01)));
-}
-
-
-
-static inline unsigned int _random_uint_mask(neat_t* neat,unsigned int mask,unsigned int max){
-	unsigned int out=_random_uint32(neat)&mask;
+static inline unsigned int _random_uint(neat_t* neat,unsigned int max){
+	unsigned int mask=max-1;
+	mask|=mask>>1;
+	mask|=mask>>2;
+	mask|=mask>>4;
+	mask|=mask>>8;
+	neat->_prng_state.count--;
+	unsigned int out=neat->_prng_state.data[neat->_prng_state.count]&(mask|(mask>>16));
 	if (out>=max){
 		out-=max;
 	}
@@ -124,19 +123,10 @@ static inline unsigned int _random_uint_mask(neat_t* neat,unsigned int mask,unsi
 
 
 
-static inline unsigned int _get_number_mask(unsigned int n){
-	n--;
-	n|=n>>1;
-	n|=n>>2;
-	n|=n>>4;
-	n|=n>>8;
-	return n|(n>>16);
-}
-
-
-
-static inline unsigned int _random_uint(neat_t* neat,unsigned int max){
-	return _random_uint_mask(neat,_get_number_mask(max),max);
+static inline float _vector_sum(__m256 sum256){
+	__m128 sum128=_mm_add_ps(_mm256_castps256_ps128(sum256),_mm256_extractf128_ps(sum256,1));
+	__m128 sum64=_mm_add_ps(sum128,_mm_movehl_ps(sum128,sum128));
+	return _mm_cvtss_f32(_mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0b01)));
 }
 
 
@@ -314,13 +304,12 @@ float neat_update(neat_t* neat){
 		start_genome=neat->genomes+1;
 	}
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
-	unsigned int surviving_genome_mask=_get_number_mask(surviving_genome_count);
 	neat_genome_t* child=neat->genomes+surviving_genome_count;
 	_random_ensure_count(neat,1);
 	unsigned int mutation_type=_random_uint32(neat);
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
 		_random_ensure_count(neat,4);
-		const neat_genome_t* random_genome=neat->genomes+_random_uint_mask(neat,surviving_genome_mask,surviving_genome_count);
+		const neat_genome_t* random_genome=neat->genomes+_random_uint(neat,surviving_genome_count);
 		child->node_count=random_genome->node_count;
 		child->_node_count_sq=random_genome->_node_count_sq;
 		if (stale||(mutation_type&1)){
@@ -379,7 +368,7 @@ _mutate_random_edge:
 			}
 		}
 		else{
-			const neat_genome_t* second_random_genome=neat->genomes+_random_uint_mask(neat,surviving_genome_mask,surviving_genome_count);
+			const neat_genome_t* second_random_genome=neat->genomes+_random_uint(neat,surviving_genome_count);
 			unsigned int min_node_count=(second_random_genome->node_count<random_genome->node_count?second_random_genome:random_genome)->node_count;
 			const float* first_edges=(const float*)(random_genome->edges);
 			float* child_edges=(float*)(child->edges);
