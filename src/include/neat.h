@@ -28,6 +28,7 @@ typedef struct _NEAT_GENOME{
 	float fitness_score;
 	neat_genome_node_t* nodes;
 	neat_genome_edge_t* edges;
+	unsigned char _padding[8];
 } neat_genome_t;
 
 
@@ -93,7 +94,11 @@ void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const f
 
 
 
-const neat_genome_t* neat_update(neat_t* neat);
+float neat_update(neat_t* neat);
+
+
+
+const neat_genome_t* neat_get_best(const neat_t* neat);
 
 
 

@@ -147,8 +147,8 @@ static inline float _activation_function(float x){
 	};
 	unsigned int sign_mask=data.v&0x80000000;
 	data.v&=0x7fffffff;
-	x=data.f;
 	float x_sq=x*x;
+	x=data.f;
 	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f);
 	float x2=x+1;
 	data.f=x2;
@@ -261,7 +261,7 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 
 
 
-const neat_genome_t* neat_update(neat_t* neat){
+float neat_update(neat_t* neat){
 	float average=neat->_fitness_score_sum/neat->population;
 	_Bool stale=fabs(neat->_last_average_fitness_score-average)<MAX_STALE_FITNESS_DIFFERENCE;
 	neat->_last_average_fitness_score=average;
@@ -295,11 +295,11 @@ const neat_genome_t* neat_update(neat_t* neat){
 	if (stale||start_genome==neat->genomes){
 		start_genome=neat->genomes+1;
 	}
-	const neat_genome_t* best_genome=neat->genomes;
+	float best_genome_fitness=neat->genomes->fitness_score;
 	neat_genome_t* child=neat->genomes+1;
 	while (child<start_genome){
-		if (child->fitness_score>best_genome->fitness_score){
-			best_genome=child;
+		if (child->fitness_score>best_genome_fitness){
+			best_genome_fitness=child->fitness_score;
 		}
 		child++;
 	}
@@ -417,12 +417,26 @@ _mutate_random_edge:
 		neat->_fitness_score_sum-=child->fitness_score;
 		child->fitness_score=neat->fitness_score_callback(neat,child);
 		neat->_fitness_score_sum+=child->fitness_score;
-		if (child->fitness_score>best_genome->fitness_score){
-			best_genome=child;
+		if (child->fitness_score>best_genome_fitness){
+			best_genome_fitness=child->fitness_score;
 		}
 		child++;
 	}
-	return best_genome;
+	return best_genome_fitness;
+}
+
+
+
+const neat_genome_t* neat_get_best(const neat_t* neat){
+	const neat_genome_t* out=neat->genomes;
+	const neat_genome_t* genome=out+1;
+	for (unsigned int i=1;i<neat->population;i++){
+		if (genome->fitness_score>out->fitness_score){
+			genome=out;
+		}
+		genome++;
+	}
+	return out;
 }
 
 

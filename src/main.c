@@ -22,15 +22,15 @@ int main(void){
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,example->fitness_score_callback,&neat);
 	unsigned long int start=get_time();
-	const neat_genome_t* best=NULL;
 	unsigned int i=0;
 	for (;i<10000;i++){
-		best=neat_update(&neat);
-		printf("%.2f%%\n",best->fitness_score*100);
-		if (best->fitness_score>=example->max_fitness_score){
+		float best_fitness_score=neat_update(&neat);
+		printf("%.2f%%\n",best_fitness_score*100);
+		if (best_fitness_score>=example->max_fitness_score){
 			break;
 		}
 	}
+	const neat_genome_t* best=neat_get_best(&neat);
 	double delta_time=(get_time()-start)*1e-9;
 	printf("Seed: %.8x, Time: %.3fs, Iterations: %u, Time per Iteration: %.6fs\n",seed,delta_time,i,delta_time/i);
 	example->end_callback(&neat,best);
