@@ -179,6 +179,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->_node_data=aligned_alloc(32,population*MAX_NODE_COUNT*sizeof(neat_genome_node_t));
 	out->_edge_data=aligned_alloc(32,population*MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t));
 	unsigned int node_count=(input_count+output_count+7)&0xfffffff8;
+	unsigned int node_count_sq=node_count*node_count;
 	neat_genome_t* genome=out->genomes;
 	neat_genome_node_t* node_data_ptr=out->_node_data;
 	neat_genome_edge_t* edge_data_ptr=out->_edge_data;
@@ -187,6 +188,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		genome->fitness_score=0.0f;
 		genome->nodes=node_data_ptr;
 		genome->edges=edge_data_ptr;
+		genome->_node_count_sq=node_count_sq;
 		for (unsigned int j=0;j<node_count;j++){
 			node_data_ptr->bias=0.0f;
 			node_data_ptr++;
@@ -322,6 +324,7 @@ float neat_update(neat_t* neat){
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_NODE_COUNT){
 				child->node_count+=8;
+				child->_node_count_sq=child->node_count*child->node_count;
 				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
 				unsigned int insert_index_start=insert_index_end-7;
 				const neat_genome_node_t* random_genome_node=random_genome->nodes;
@@ -352,17 +355,17 @@ float neat_update(neat_t* neat){
 			else{
 				const float* edges=(const float*)(random_genome->edges);
 				float* child_edges=(float*)(child->edges);
-				for (unsigned int i=0;i<random_genome->node_count*random_genome->node_count;i+=8){
+				for (unsigned int i=0;i<random_genome->_node_count_sq;i+=8){
 					_mm256_store_ps(child_edges,_mm256_load_ps(edges));
 					child_edges+=8;
 					edges+=8;
 				}
 				if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE){
 _mutate_random_edge:
-					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight+=_random_uniform(neat);
+					(child->edges+_random_int(neat,random_genome->_node_count_sq))->weight+=_random_uniform(neat);
 				}
 				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE){
-					(child->edges+_random_int(neat,random_genome->node_count*random_genome->node_count))->weight=_random_uniform(neat);
+					(child->edges+_random_int(neat,random_genome->_node_count_sq))->weight=_random_uniform(neat);
 				}
 				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE){
 					(child->nodes+_random_int(neat,random_genome->node_count))->bias+=_random_uniform(neat);

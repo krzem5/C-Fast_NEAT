@@ -28,7 +28,8 @@ typedef struct _NEAT_GENOME{
 	float fitness_score;
 	neat_genome_node_t* nodes;
 	neat_genome_edge_t* edges;
-	unsigned char _padding[8];
+	unsigned int _node_count_sq;
+	unsigned char _padding[4];
 } neat_genome_t;
 
 
