@@ -211,7 +211,7 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 	__attribute__((aligned(256))) float node_values[MAX_NODE_COUNT];
 	float* values=node_values;
 	__m256 zero=_mm256_setzero_ps();
-	for (unsigned int i=0;i<genome->node_count;i+=8){
+	for (unsigned int i=0;i<((genome->node_count+31)&0xffffffe0);i+=8){
 		if (i<neat->input_count){
 			_mm256_store_ps(values,_mm256_loadu_ps(in));
 			in+=8;
@@ -241,17 +241,24 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 	}
 	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
-		__m256 sum256=_mm256_setzero_ps();
 		values=node_values;
-		unsigned int j=0;
-		do{
-			sum256=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256);
-			j+=8;
-			weights+=8;
-			values+=8;
-		} while (j<i);
-		weights+=genome->node_count-j;
-		node_values[i]=_activation_function(_vector_sum(sum256)+(genome->nodes+i)->bias);
+		__m256 sum256a=_mm256_mul_ps(_mm256_load_ps(weights),_mm256_load_ps(values));
+		__m256 sum256b=_mm256_mul_ps(_mm256_load_ps(weights+8),_mm256_load_ps(values+8));
+		__m256 sum256c=_mm256_mul_ps(_mm256_load_ps(weights+16),_mm256_load_ps(values+16));
+		__m256 sum256d=_mm256_mul_ps(_mm256_load_ps(weights+24),_mm256_load_ps(values+24));
+		weights+=32;
+		unsigned int j=32;
+		while (j<i){
+			values+=32;
+			sum256a=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256a);
+			sum256b=_mm256_fmadd_ps(_mm256_load_ps(weights+8),_mm256_load_ps(values+8),sum256b);
+			sum256c=_mm256_fmadd_ps(_mm256_load_ps(weights+16),_mm256_load_ps(values+16),sum256c);
+			sum256d=_mm256_fmadd_ps(_mm256_load_ps(weights+24),_mm256_load_ps(values+24),sum256d);
+			j+=32;
+			weights+=32;
+		}
+		weights+=((uint64_t)genome->node_count)-j;
+		node_values[i]=_activation_function(_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256b),_mm256_add_ps(sum256c,sum256d)))+(genome->nodes+i)->bias);
 		if (i>=genome->node_count-neat->output_count){
 			*out=node_values[i];
 			out++;

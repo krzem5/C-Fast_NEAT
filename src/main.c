@@ -16,7 +16,7 @@ static unsigned long int get_time(void){
 
 
 int main(void){
-	for (unsigned int x=0;x<100;x++){
+	for (unsigned int x=0;x<10;x++){
 	unsigned int seed=get_time()&0xffffffff;
 	srand(seed);
 	const example_t* example=example_get("xor3");
