@@ -10,6 +10,7 @@
 #define MAX_NODE_COUNT 512
 
 #define ACTIVATION_FUNCTION_SCALE 4.5f
+#define USE_STEP_ACTIVATION_FUNCTION 0
 
 #define MUTATION_ACTION_TYPE_ADD_NODES 1
 #define MUTATION_ACTION_TYPE_ADJUST_EDGE 454
@@ -145,6 +146,9 @@ static inline float _activation_function(float x){
 	float_data_t data={
 		.f=x*ACTIVATION_FUNCTION_SCALE
 	};
+#if USE_STEP_ACTIVATION_FUNCTION
+	return 1-(float)(data.v>>31)*2;
+#else
 	unsigned int sign_mask=data.v&0x80000000;
 	data.v&=0x7fffffff;
 	float x_sq=x*x;
@@ -156,6 +160,7 @@ static inline float _activation_function(float x){
 	float tmp=2-x2*data.f;
 	data.v|=sign_mask;
 	return data.f*tmp*x;
+#endif
 }
 
 
