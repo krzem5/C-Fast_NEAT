@@ -51,6 +51,7 @@ typedef struct _NEAT{
 	float _last_average_fitness_score;
 	neat_fitness_score_callback_t fitness_score_callback;
 	neat_genome_t* genomes;
+	neat_genome_node_t* _genome_data;
 	neat_genome_node_t* _node_data;
 	neat_genome_edge_t* _edge_data;
 	float _fitness_score_sum;
