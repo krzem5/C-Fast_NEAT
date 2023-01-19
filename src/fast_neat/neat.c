@@ -147,13 +147,13 @@ static inline float _activation_function(float x){
 		.f=x*ACTIVATION_FUNCTION_SCALE
 	};
 #if USE_STEP_ACTIVATION_FUNCTION
-	return 1-(float)(data.v>>31)*2;
+	return 1-2.0f*(data.v>>31);
 #else
+	float x_sq=x*x;
 	unsigned int sign_mask=data.v&0x80000000;
 	data.v&=0x7fffffff;
-	float x_sq=x*x;
 	x=data.f;
-	x+=2/3.0f*x_sq*(1+2*x+x*x_sq/5.0f);
+	x+=0.13333333f*x_sq*(5+10*x+x*x_sq);
 	float x2=x+1;
 	data.f=x2;
 	data.v=0x7ef127ea-data.v;
