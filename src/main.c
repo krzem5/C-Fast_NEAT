@@ -16,6 +16,7 @@ static unsigned long int get_time(void){
 
 
 int main(void){
+	for (unsigned int x=0;x<100;x++){
 	unsigned int seed=get_time()&0xffffffff;
 	srand(seed);
 	const example_t* example=example_get("xor3");
@@ -25,7 +26,7 @@ int main(void){
 	unsigned int i=0;
 	for (;i<10000;i++){
 		float best_fitness_score=neat_update(&neat);
-		printf("%.2f%%\n",best_fitness_score*100);
+		// printf("%.2f%%\n",best_fitness_score*100);
 		if (best_fitness_score>=example->max_fitness_score){
 			break;
 		}
@@ -41,5 +42,6 @@ int main(void){
 	strcat(strcat(path,example->name),".neat");
 	neat_save_model(&model,path);
 	neat_deinit_model(&model);
+	}
 	return 0;
 }
