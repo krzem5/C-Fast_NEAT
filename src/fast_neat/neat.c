@@ -314,10 +314,11 @@ float neat_update(neat_t* neat){
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
 	unsigned int surviving_genome_mask=_get_number_mask(surviving_genome_count);
 	neat_genome_t* child=neat->genomes+surviving_genome_count;
+	unsigned int mutation_type=_random_uint32(neat);
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
 		const neat_genome_t* random_genome=neat->genomes+_random_int_mask(neat,surviving_genome_mask,surviving_genome_count);
 		child->node_count=random_genome->node_count;
-		if (stale||(_random_uint32(neat)&1)){
+		if (stale||(mutation_type&1)){
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_NODE_COUNT){
 				child->node_count+=8;
@@ -423,6 +424,7 @@ _mutate_random_edge:
 				first_nodes+=8;
 			}
 		}
+		mutation_type=(idx&31?mutation_type>>1:_random_uint32(neat));
 		neat->_fitness_score_sum-=child->fitness_score;
 		child->fitness_score=neat->fitness_score_callback(neat,child);
 		neat->_fitness_score_sum+=child->fitness_score;
