@@ -85,16 +85,9 @@ static void _random_ensure_count(neat_t* neat,unsigned int count){
 
 
 
-static inline unsigned int _random_uint32_no_gen(neat_t* neat){
+static inline unsigned int _random_uint32(neat_t* neat){
 	neat->_prng_state.count--;
 	return neat->_prng_state.data[neat->_prng_state.count];
-}
-
-
-
-static inline unsigned int _random_uint32(neat_t* neat){
-	_random_ensure_count(neat,1);
-	return _random_uint32_no_gen(neat);
 }
 
 
@@ -107,13 +100,7 @@ static inline const unsigned int* _random_uint256_ptr(neat_t* neat){
 
 
 
-static inline float _random_uniform_no_gen(neat_t* neat){
-	return (float)(((int32_t)_random_uint32_no_gen(neat))>>7)*0x1p-24f;
-}
-
-
-
-static inline float _random_uniform(neat_t* neat){
+static inline float _random_float(neat_t* neat){
 	return (float)(((int32_t)_random_uint32(neat))>>7)*0x1p-24f;
 }
 
@@ -127,8 +114,8 @@ static inline float _vector_sum(__m256 sum256){
 
 
 
-static inline unsigned int _random_uint_mask_no_gen(neat_t* neat,unsigned int mask,unsigned int max){
-	unsigned int out=_random_uint32_no_gen(neat)&mask;
+static inline unsigned int _random_uint_mask(neat_t* neat,unsigned int mask,unsigned int max){
+	unsigned int out=_random_uint32(neat)&mask;
 	if (out>=max){
 		out-=max;
 	}
@@ -148,8 +135,8 @@ static inline unsigned int _get_number_mask(unsigned int n){
 
 
 
-static inline unsigned int _random_uint_no_gen(neat_t* neat,unsigned int max){
-	return _random_uint_mask_no_gen(neat,_get_number_mask(max),max);
+static inline unsigned int _random_uint(neat_t* neat,unsigned int max){
+	return _random_uint_mask(neat,_get_number_mask(max),max);
 }
 
 
@@ -205,7 +192,8 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 			node_data_ptr->bias=0.0f;
 			node_data_ptr++;
 			for (unsigned int k=0;k<node_count;k++){
-				edge_data_ptr->weight=_random_uniform(out);
+				_random_ensure_count(out,1);
+				edge_data_ptr->weight=_random_float(out);
 				edge_data_ptr++;
 			}
 		}
@@ -328,14 +316,15 @@ float neat_update(neat_t* neat){
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
 	unsigned int surviving_genome_mask=_get_number_mask(surviving_genome_count);
 	neat_genome_t* child=neat->genomes+surviving_genome_count;
+	_random_ensure_count(neat,1);
 	unsigned int mutation_type=_random_uint32(neat);
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
 		_random_ensure_count(neat,4);
-		const neat_genome_t* random_genome=neat->genomes+_random_uint_mask_no_gen(neat,surviving_genome_mask,surviving_genome_count);
+		const neat_genome_t* random_genome=neat->genomes+_random_uint_mask(neat,surviving_genome_mask,surviving_genome_count);
 		child->node_count=random_genome->node_count;
 		child->_node_count_sq=random_genome->_node_count_sq;
 		if (stale||(mutation_type&1)){
-			unsigned int action=_random_uint32_no_gen(neat)&MUTATION_ACTION_MASK;
+			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_NODE_COUNT){
 				child->node_count+=8;
 				child->_node_count_sq=child->node_count*child->node_count;
@@ -376,21 +365,21 @@ float neat_update(neat_t* neat){
 				}
 				if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE){
 _mutate_random_edge:
-					(child->edges+_random_uint_no_gen(neat,random_genome->_node_count_sq))->weight+=_random_uniform_no_gen(neat);
+					(child->edges+_random_uint(neat,random_genome->_node_count_sq))->weight+=_random_float(neat);
 				}
 				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE){
-					(child->edges+_random_uint_no_gen(neat,random_genome->_node_count_sq))->weight=_random_uniform_no_gen(neat);
+					(child->edges+_random_uint(neat,random_genome->_node_count_sq))->weight=_random_float(neat);
 				}
 				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE){
-					(child->nodes+_random_uint_no_gen(neat,random_genome->node_count))->bias+=_random_uniform_no_gen(neat);
+					(child->nodes+_random_uint(neat,random_genome->node_count))->bias+=_random_float(neat);
 				}
 				else{
-					(child->nodes+_random_uint_no_gen(neat,random_genome->node_count))->bias=_random_uniform_no_gen(neat);
+					(child->nodes+_random_uint(neat,random_genome->node_count))->bias=_random_float(neat);
 				}
 			}
 		}
 		else{
-			const neat_genome_t* second_random_genome=neat->genomes+_random_uint_mask_no_gen(neat,surviving_genome_mask,surviving_genome_count);
+			const neat_genome_t* second_random_genome=neat->genomes+_random_uint_mask(neat,surviving_genome_mask,surviving_genome_count);
 			unsigned int min_node_count=(second_random_genome->node_count<random_genome->node_count?second_random_genome:random_genome)->node_count;
 			const float* first_edges=(const float*)(random_genome->edges);
 			float* child_edges=(float*)(child->edges);
@@ -441,7 +430,13 @@ _mutate_random_edge:
 				first_nodes+=8;
 			}
 		}
-		mutation_type=(idx&31?mutation_type>>1:_random_uint32(neat));
+		if (idx&31){
+			mutation_type>>=1;
+		}
+		else{
+			_random_ensure_count(neat,1);
+			mutation_type=_random_uint32(neat);
+		}
 		neat->_fitness_score_sum-=child->fitness_score;
 		child->fitness_score=neat->fitness_score_callback(neat,child);
 		neat->_fitness_score_sum+=child->fitness_score;
