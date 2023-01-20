@@ -11,7 +11,8 @@
 #define MAX_NODE_COUNT 512
 
 #define ACTIVATION_FUNCTION_SCALE 4.5f
-#define USE_STEP_ACTIVATION_FUNCTION 0
+#define ACTIVATION_FUNCTION_TYPE_TANH 0
+#define ACTIVATION_FUNCTION_TYPE_STEP 1
 
 #define MUTATION_ACTION_TYPE_ADD_NODES 1
 #define MUTATION_ACTION_TYPE_ADJUST_EDGE 454
@@ -295,9 +296,16 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 		__m128 value_b=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)));
 		value_b=_mm_shuffle_ps(value_b,value_b,0b0000);
 		__m128 combined_value=_mm_fmadd_ps(_mm_blend_ps(value_a,value_b,0b10),_mm_set_ps1(ACTIVATION_FUNCTION_SCALE),_mm_set_ps1((genome->nodes+i)->bias*ACTIVATION_FUNCTION_SCALE));
-		__m128 processed_value=_activation_function_tanh(combined_value);
-		float processed_value_a=_mm_cvtss_f32(processed_value);
-		float processed_value_b=_mm_cvtss_f32(_mm_shuffle_ps(processed_value,processed_value,0b10));
+		switch (ACTIVATION_FUNCTION_TYPE_TANH){
+			case ACTIVATION_FUNCTION_TYPE_TANH:
+				combined_value=_activation_function_tanh(combined_value);
+				break;
+			case ACTIVATION_FUNCTION_TYPE_STEP:
+				combined_value=_activation_function_step(combined_value);
+				break;
+		}
+		float processed_value_a=_mm_cvtss_f32(combined_value);
+		float processed_value_b=_mm_cvtss_f32(_mm_shuffle_ps(combined_value,combined_value,0b10));
 		node_values[i+(i&0xfffffff8)]=processed_value_a;
 		node_values[i+(i&0xfffffff8)+8]=processed_value_b;
 		if (i>=genome->node_count-neat->output_count){
