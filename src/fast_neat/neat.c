@@ -16,11 +16,11 @@
 #define ACTIVATION_FUNCTION_MAX_TYPE ACTIVATION_FUNCTION_TYPE_STEP
 
 #define MUTATION_ACTION_TYPE_ADD_NODES 1
-#define MUTATION_ACTION_TYPE_ADJUST_EDGE 454
-#define MUTATION_ACTION_TYPE_SET_EDGE 114
-#define MUTATION_ACTION_TYPE_ADJUST_NODE 340
-#define MUTATION_ACTION_TYPE_SET_NODE 109
-#define MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION 5
+#define MUTATION_ACTION_TYPE_ADJUST_EDGE 449
+#define MUTATION_ACTION_TYPE_SET_EDGE 109
+#define MUTATION_ACTION_TYPE_ADJUST_NODE 335
+#define MUTATION_ACTION_TYPE_SET_NODE 104
+#define MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION 25
 #define MUTATION_ACTION_MASK 0x3ff
 #define MAX_STALE_FITNESS_DIFFERENCE 1e-6f
 
@@ -43,6 +43,13 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 	unsigned int index;
 	float weight;
 } neat_model_file_edge_t;
+
+
+
+typedef struct __attribute__((packed)) _NEAT_MODEL_FILE_NODE{
+	float bias;
+	uint8_t activation_function;
+} neat_model_file_node_t;
 
 
 
@@ -574,7 +581,11 @@ _Bool neat_save_model(const neat_model_t* model,const char* file_path){
 	}
 	const neat_model_node_t* node=model->nodes+model->input_count;
 	for (unsigned int i=model->input_count;i<model->node_count;i++){
-		if (fwrite(&(node->bias),sizeof(float),1,file)!=1){
+		neat_model_file_node_t node_data={
+			node->bias,
+			node->activation_function
+		};
+		if (fwrite(&node_data,sizeof(neat_model_file_node_t),1,file)!=1){
 			goto _error;
 		}
 		node++;

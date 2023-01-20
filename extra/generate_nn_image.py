@@ -10,6 +10,9 @@ NODE_WIDTH=20
 NODE_DISTANCE=20
 EDGE_WIDTH=5
 
+ACTIVATION_FUNCTION_TANH=0
+ACTIVATION_FUNCTION_STEP=1
+
 
 
 for name in os.listdir("../build"):
@@ -17,14 +20,14 @@ for name in os.listdir("../build"):
 		continue
 	with open(f"../build/{name}","rb") as rf:
 		input_count,output_count,node_count,edge_count=struct.unpack("<IIII",rf.read(16))
-		nodes=[0.0 for _ in range(0,input_count)]
+		nodes=[(0.0,0) for _ in range(0,input_count)]
 		edges=[0.0 for _ in range(0,node_count*node_count)]
 		for i in range(0,node_count-input_count):
-			nodes.append(struct.unpack("<f",rf.read(4))[0])
+			nodes.append(struct.unpack("<fB",rf.read(5)))
 		for i in range(0,edge_count):
 			j,weight=struct.unpack("<If",rf.read(8))
 			edges[j]=weight
-		bias_range=max(max(map(abs,nodes)),0.0001)
+		bias_range=max(max(map(lambda e:abs(e[0]),nodes)),0.0001)
 		weight_range=max(max(map(abs,edges)),0.0001)
 		node_layer_position=[None for _ in range(0,node_count)]
 		layer_element_count=[[]]
@@ -66,6 +69,9 @@ for name in os.listdir("../build"):
 				t=int(255*min(max(weight/(2*weight_range)+0.5,0),1))
 				draw.line((node_layer_position[i],node_layer_position[j]),fill=(t,t,t),width=EDGE_WIDTH)
 		for i,(cx,cy) in enumerate(node_layer_position):
-			t=min(max(nodes[i]/(2*bias_range)+0.5,0),1)
-			draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
+			t=min(max(nodes[i][0]/(2*bias_range)+0.5,0),1)
+			if (nodes[i][1]==ACTIVATION_FUNCTION_TANH):
+				draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
+			else:
+				print("Q")
 		image.save(f"../build/{name[:-5]}.png")
