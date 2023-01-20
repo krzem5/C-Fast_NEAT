@@ -7,6 +7,7 @@
 
 
 
+// MAX_NODE_COUNT must be a multiple of 32
 #define MAX_NODE_COUNT 512
 
 #define ACTIVATION_FUNCTION_SCALE 4.5f
@@ -321,25 +322,27 @@ float neat_update(neat_t* neat){
 				unsigned int insert_index_start=insert_index_end-7;
 				const neat_genome_node_t* random_genome_node=random_genome->nodes;
 				const neat_genome_edge_t* random_genome_edge=random_genome->edges;
-				unsigned int k=0;
+				neat_genome_node_t* nodes=child->nodes;
+				neat_genome_edge_t* edges=child->edges;
 				for (unsigned int i=0;i<child->node_count;i++){
 					_Bool inserted_i=i>=insert_index_start&&i<=insert_index_end;
 					if (inserted_i){
-						(child->nodes+i)->bias=0.0f;
+						nodes->bias=0.0f;
 					}
 					else{
-						(child->nodes+i)->bias=random_genome_node->bias;
+						nodes->bias=random_genome_node->bias;
 						random_genome_node++;
 					}
+					nodes++;
 					for (unsigned int j=0;j<child->node_count;j++){
 						if (inserted_i||(j>=insert_index_start&&j<=insert_index_end)){
-							(child->edges+k)->weight=0.0f;
+							edges->weight=0.0f;
 						}
 						else{
-							(child->edges+k)->weight=random_genome_edge->weight;
+							edges->weight=random_genome_edge->weight;
 							random_genome_edge++;
 						}
-						k++;
+						edges++;
 					}
 				}
 				goto _mutate_random_edge;
