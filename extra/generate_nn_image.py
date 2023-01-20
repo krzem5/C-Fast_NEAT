@@ -71,7 +71,7 @@ for name in os.listdir("../build"):
 		for i,(cx,cy) in enumerate(node_layer_position):
 			t=min(max(nodes[i][0]/(2*bias_range)+0.5,0),1)
 			if (nodes[i][1]==ACTIVATION_FUNCTION_TANH):
-				draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
+				draw.ellipse((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
 			else:
-				print("Q")
+				draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
 		image.save(f"../build/{name[:-5]}.png")
