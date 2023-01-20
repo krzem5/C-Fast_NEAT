@@ -13,6 +13,7 @@ struct _NEAT;
 
 typedef struct _NEAT_GENOME_NODE{
 	float bias;
+	unsigned int activation_function;
 } neat_genome_node_t;
 
 
@@ -63,6 +64,7 @@ typedef struct _NEAT{
 
 typedef struct _NEAT_MODEL_NODE{
 	float bias;
+	unsigned int activation_function;
 } neat_model_node_t;
 
 

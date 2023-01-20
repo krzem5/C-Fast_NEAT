@@ -13,16 +13,18 @@
 #define ACTIVATION_FUNCTION_SCALE 4.5f
 #define ACTIVATION_FUNCTION_TYPE_TANH 0
 #define ACTIVATION_FUNCTION_TYPE_STEP 1
+#define ACTIVATION_FUNCTION_MAX_TYPE ACTIVATION_FUNCTION_TYPE_STEP
 
 #define MUTATION_ACTION_TYPE_ADD_NODES 1
 #define MUTATION_ACTION_TYPE_ADJUST_EDGE 454
 #define MUTATION_ACTION_TYPE_SET_EDGE 114
 #define MUTATION_ACTION_TYPE_ADJUST_NODE 340
-#define MUTATION_ACTION_TYPE_SET_NODE 114
+#define MUTATION_ACTION_TYPE_SET_NODE 109
+#define MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION 5
 #define MUTATION_ACTION_MASK 0x3ff
 #define MAX_STALE_FITNESS_DIFFERENCE 1e-6f
 
-#if MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE!=MUTATION_ACTION_MASK
+#if MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE+MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION!=MUTATION_ACTION_MASK
 #error Sum of mutation actions must be equal to MUTATION_ACTION_MASK
 #endif
 
@@ -214,6 +216,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		genome->_node_count_sq=node_count_sq;
 		for (unsigned int j=0;j<node_count;j++){
 			node_data_ptr->bias=0.0f;
+			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
 			node_data_ptr++;
 			for (unsigned int k=0;k<node_count;k++){
 				_random_ensure_count(out,1);
@@ -296,7 +299,7 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 		__m128 value_b=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)));
 		value_b=_mm_shuffle_ps(value_b,value_b,0b0000);
 		__m128 combined_value=_mm_fmadd_ps(_mm_blend_ps(value_a,value_b,0b10),_mm_set_ps1(ACTIVATION_FUNCTION_SCALE),_mm_set_ps1((genome->nodes+i)->bias*ACTIVATION_FUNCTION_SCALE));
-		switch (ACTIVATION_FUNCTION_TYPE_TANH){
+		switch ((genome->nodes+i)->activation_function){
 			case ACTIVATION_FUNCTION_TYPE_TANH:
 				combined_value=_activation_function_tanh(combined_value);
 				break;
@@ -381,9 +384,11 @@ float neat_update(neat_t* neat){
 					_Bool inserted_i=i>=insert_index_start&&i<=insert_index_end;
 					if (inserted_i){
 						nodes->bias=0.0f;
+						nodes->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
 					}
 					else{
 						nodes->bias=random_genome_node->bias;
+						nodes->activation_function=random_genome_node->activation_function;
 						random_genome_node++;
 					}
 					nodes++;
@@ -408,6 +413,13 @@ float neat_update(neat_t* neat){
 					child_edges+=8;
 					edges+=8;
 				}
+				const double* nodes=(const double*)(random_genome->nodes);
+				double* child_nodes=(double*)(child->nodes);
+				for (unsigned int i=0;i<random_genome->node_count;i+=4){
+					_mm256_store_pd(child_nodes,_mm256_load_pd(nodes));
+					child_nodes+=4;
+					nodes+=4;
+				}
 				if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE){
 _mutate_random_edge:
 					(child->edges+_random_uint(neat,random_genome->_node_count_sq))->weight+=_random_float(neat);
@@ -418,8 +430,11 @@ _mutate_random_edge:
 				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE){
 					(child->nodes+_random_uint(neat,random_genome->node_count))->bias+=_random_float(neat);
 				}
-				else{
+				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE){
 					(child->nodes+_random_uint(neat,random_genome->node_count))->bias=_random_float(neat);
+				}
+				else{
+					(child->nodes+_random_uint(neat,random_genome->node_count))->activation_function=_random_uint(neat,ACTIVATION_FUNCTION_MAX_TYPE);
 				}
 			}
 		}
@@ -432,7 +447,7 @@ _mutate_random_edge:
 				const float* second_edges=(const float*)(second_random_genome->edges+i*second_random_genome->node_count);
 				__m256i random_vector=_mm256_undefined_si256();
 				for (unsigned int j=0;j<min_node_count;j+=8){
-					if (!(j&63)){
+					if (!(j&255)){
 						_random_ensure_count(neat,8);
 						random_vector=_mm256_loadu_si256((const __m256i*)_random_uint256_ptr(neat));
 					}
@@ -454,27 +469,26 @@ _mutate_random_edge:
 					child_edges+=8;
 					first_edges+=8;
 				}
-				(child->nodes+i)->bias=(random_genome->nodes+i)->bias;
 			}
-			const float* first_nodes=(const float*)(random_genome->nodes);
-			const float* second_nodes=(const float*)(second_random_genome->nodes);
-			float* child_nodes=(float*)(child->nodes);
+			const double* first_nodes=(const double*)(random_genome->nodes);
+			const double* second_nodes=(const double*)(second_random_genome->nodes);
+			double* child_nodes=(double*)(child->nodes);
 			__m256i random_vector=_mm256_undefined_si256();
-			for (unsigned int i=0;i<min_node_count;i+=8){
-				if (!(i&63)){
+			for (unsigned int i=0;i<min_node_count;i+=4){
+				if (!(i&255)){
 					_random_ensure_count(neat,8);
 					random_vector=_mm256_loadu_si256((const __m256i*)_random_uint256_ptr(neat));
 				}
-				_mm256_store_ps(child_nodes,_mm256_blendv_ps(_mm256_load_ps(first_nodes),_mm256_load_ps(second_nodes),_mm256_castsi256_ps(random_vector)));
-				child_nodes+=8;
-				first_nodes+=8;
-				second_nodes+=8;
-				random_vector=_mm256_slli_epi32(random_vector,1);
+				_mm256_store_pd(child_nodes,_mm256_blendv_pd(_mm256_load_pd(first_nodes),_mm256_load_pd(second_nodes),_mm256_castsi256_pd(random_vector)));
+				child_nodes+=4;
+				first_nodes+=4;
+				second_nodes+=4;
+				random_vector=_mm256_slli_epi64(random_vector,1);
 			}
-			for (unsigned int i=min_node_count;i<random_genome->node_count;i+=8){
-				_mm256_store_ps(child_nodes,_mm256_load_ps(first_nodes));
-				child_nodes+=8;
-				first_nodes+=8;
+			for (unsigned int i=min_node_count;i<random_genome->node_count;i+=4){
+				_mm256_store_pd(child_nodes,_mm256_load_pd(first_nodes));
+				child_nodes+=4;
+				first_nodes+=4;
 			}
 		}
 		if (idx&31){
@@ -522,6 +536,7 @@ void neat_extract_model(const neat_t* neat,const neat_genome_t* genome,neat_mode
 	neat_model_edge_t* edge=out->edges;
 	for (unsigned int i=0;i<out->node_count;i++){
 		(out->nodes+i)->bias=(genome->nodes+i)->bias;
+		(out->nodes+i)->activation_function=(genome->nodes+i)->activation_function;
 		for (unsigned int j=0;j<out->node_count;j++){
 			edge->weight=genome_edge->weight;
 			if (edge->weight!=0.0f){
