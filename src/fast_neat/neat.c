@@ -94,7 +94,6 @@ static inline unsigned int _random_uint32(neat_t* neat){
 
 
 static inline const unsigned int* _random_uint256_ptr(neat_t* neat){
-	_random_ensure_count(neat,8);
 	neat->_prng_state.count-=8;
 	return neat->_prng_state.data+neat->_prng_state.count;
 }
@@ -380,6 +379,7 @@ _mutate_random_edge:
 				__m256i random_vector=_mm256_undefined_si256();
 				for (unsigned int j=0;j<min_node_count;j+=8){
 					if (!(j&63)){
+						_random_ensure_count(neat,8);
 						random_vector=_mm256_loadu_si256((const __m256i*)_random_uint256_ptr(neat));
 					}
 					_mm256_store_ps(child_edges,_mm256_blendv_ps(_mm256_load_ps(first_edges),_mm256_load_ps(second_edges),_mm256_castsi256_ps(random_vector)));
@@ -408,6 +408,7 @@ _mutate_random_edge:
 			__m256i random_vector=_mm256_undefined_si256();
 			for (unsigned int i=0;i<min_node_count;i+=8){
 				if (!(i&63)){
+					_random_ensure_count(neat,8);
 					random_vector=_mm256_loadu_si256((const __m256i*)_random_uint256_ptr(neat));
 				}
 				_mm256_store_ps(child_nodes,_mm256_blendv_ps(_mm256_load_ps(first_nodes),_mm256_load_ps(second_nodes),_mm256_castsi256_ps(random_vector)));
