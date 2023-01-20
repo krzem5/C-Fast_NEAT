@@ -123,33 +123,49 @@ static inline unsigned int _random_uint(neat_t* neat,unsigned int max){
 
 
 
-static inline float _vector_sum(__m256 sum256){
+static inline __m128 _vector_sum(__m256 sum256){
 	__m128 sum128=_mm_add_ps(_mm256_castps256_ps128(sum256),_mm256_extractf128_ps(sum256,1));
 	__m128 sum64=_mm_add_ps(sum128,_mm_movehl_ps(sum128,sum128));
-	return _mm_cvtss_f32(_mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0b01)));
+	return _mm_add_ss(sum64,_mm_shuffle_ps(sum64,sum64,0b0001));
 }
 
 
 
-static inline float _activation_function_tanh(float x){
+static inline __m128 _activation_function_tanh(__m128 x){
+	__m128 x_sq=_mm_mul_ps(x,x);
+	__m128 mask=_mm_castsi128_ps(_mm_set1_epi32(0x80000000));
+	__m128 sign_mask=_mm_andnot_ps(x,mask);
+	x=_mm_xor_ps(x,_mm_xor_ps(sign_mask,mask));
+	x=_mm_fmadd_ps(
+		_mm_fmadd_ps(
+			_mm_set_ps1(10.0f),
+			x,
+			_mm_fmadd_ps(x,x_sq,_mm_set_ps1(5.0f))
+		),
+		_mm_mul_ps(x_sq,_mm_set_ps1(0.13333333f)),
+		x
+	);
+	__m128 x2=_mm_add_ps(x,_mm_set_ps1(1.0f));
+	__m128 tmp=_mm_castsi128_ps(_mm_sub_epi32(_mm_set1_epi32(0x7ef127ea),_mm_castps_si128(x2)));
+	return _mm_xor_ps(
+		_mm_mul_ps(
+			_mm_mul_ps(
+				_mm_fmsub_ps(tmp,x2,_mm_set_ps1(2.0f)),
+				tmp
+			),
+			x
+		),
+		sign_mask
+	);
+}
+
+
+
+static inline float _activation_function_step(float x){
 	float_data_t data={
 		.f=x*ACTIVATION_FUNCTION_SCALE
 	};
-#if USE_STEP_ACTIVATION_FUNCTION
 	return 1-2.0f*(data.v>>31);
-#else
-	float x_sq=x*x;
-	unsigned int sign_mask=data.v&0x80000000;
-	data.v&=0x7fffffff;
-	x=data.f;
-	x+=0.13333333f*x_sq*(5+10*x+x*x_sq);
-	float x2=x+1;
-	data.f=x2;
-	data.v=0x7ef127ea-data.v;
-	float tmp=2-x2*data.f;
-	data.v|=sign_mask;
-	return data.f*tmp*x;
-#endif
 }
 
 
@@ -258,16 +274,19 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 			weights+=32;
 		}
 		weights+=((uint64_t)genome->node_count)-j;
-		float value_a=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256c),_mm256_add_ps(sum256e,sum256g)));
-		float value_b=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)));
-		value_a=_activation_function_tanh(value_a+(genome->nodes+i)->bias);
-		value_b=_activation_function_tanh(value_b+(genome->nodes+i)->bias);
-		node_values[i+(i&0xfffffff8)]=value_a;
-		node_values[i+(i&0xfffffff8)+8]=value_b;
+		__m128 value_a=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256c),_mm256_add_ps(sum256e,sum256g)));
+		__m128 value_b=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)));
+		value_b=_mm_shuffle_ps(value_b,value_b,0b0000);
+		__m128 combined_value=_mm_fmadd_ps(_mm_blend_ps(value_a,value_b,0b10),_mm_set_ps1(ACTIVATION_FUNCTION_SCALE),_mm_set_ps1((genome->nodes+i)->bias*ACTIVATION_FUNCTION_SCALE));
+		__m128 processed_value=_activation_function_tanh(combined_value);
+		float processed_value_a=_mm_cvtss_f32(processed_value);
+		float processed_value_b=_mm_cvtss_f32(_mm_shuffle_ps(processed_value,processed_value,0b10));
+		node_values[i+(i&0xfffffff8)]=processed_value_a;
+		node_values[i+(i&0xfffffff8)+8]=processed_value_b;
 		if (i>=genome->node_count-neat->output_count){
-			*out1=value_a;
+			*out1=processed_value_a;
 			out1++;
-			*out2=value_b;
+			*out2=processed_value_b;
 			out2++;
 		}
 	}
