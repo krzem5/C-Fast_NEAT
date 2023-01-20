@@ -131,7 +131,7 @@ static inline float _vector_sum(__m256 sum256){
 
 
 
-static inline float _activation_function(float x){
+static inline float _activation_function_tanh(float x){
 	float_data_t data={
 		.f=x*ACTIVATION_FUNCTION_SCALE
 	};
@@ -258,8 +258,10 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 			weights+=32;
 		}
 		weights+=((uint64_t)genome->node_count)-j;
-		float value_a=_activation_function(_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256c),_mm256_add_ps(sum256e,sum256g)))+(genome->nodes+i)->bias);
-		float value_b=_activation_function(_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)))+(genome->nodes+i)->bias);
+		float value_a=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256c),_mm256_add_ps(sum256e,sum256g)));
+		float value_b=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)));
+		value_a=_activation_function_tanh(value_a+(genome->nodes+i)->bias);
+		value_b=_activation_function_tanh(value_b+(genome->nodes+i)->bias);
 		node_values[i+(i&0xfffffff8)]=value_a;
 		node_values[i+(i&0xfffffff8)+8]=value_b;
 		if (i>=genome->node_count-neat->output_count){
