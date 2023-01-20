@@ -96,7 +96,7 @@ float language_fitness_score_callback(const neat_t* neat,const neat_genome_t* ge
 	for (unsigned int i=0;i<TEST_WORD_COUNT;i++){
 		unsigned int index=example_random_below(WORD_COUNT*LANGUAGE_COUNT);
 		_encode_word(words+index*MAX_LETTER_COUNT,genome_in);
-		neat_genome_evaluate(neat,genome,genome_in,genome_out);
+		neat_genome_evaluate(neat,genome,genome_in,genome_in,genome_out,genome_out);
 		word_language_index=index/WORD_COUNT;
 		for (unsigned int j=0;j<LANGUAGE_COUNT;j++){
 			float diff=genome_out[j]*0.5f+0.5f-(j==word_language_index?1.0f:0.0f);
@@ -113,6 +113,6 @@ void language_end_callback(const neat_t* neat,const neat_genome_t* genome){
 	float genome_in[26*MAX_LETTER_COUNT];
 	float genome_out[LANGUAGE_COUNT];
 	_encode_word(word,genome_in);
-	neat_genome_evaluate(neat,genome,genome_in,genome_out);
+	neat_genome_evaluate(neat,genome,genome_in,genome_in,genome_out,genome_out);
 	printf("%s -> %s (%.2f %.2f)\n",word,languages[_get_max_language(genome_out)],genome_out[0]*0.5f+0.5f,genome_out[1]*0.5f+0.5f);
 }

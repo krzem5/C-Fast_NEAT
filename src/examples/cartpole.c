@@ -66,7 +66,7 @@ float cartpole_fitness_score_callback(const neat_t* neat,const neat_genome_t* ge
 		unsigned int j=0;
 		while (fabs(state.x)<=MAX_X_VALUE&&fabs(state.angle)<=MAX_ANGLE_VALUE&&j<MAX_SIMULATION_STEPS){
 			float force_direction;
-			neat_genome_evaluate(neat,genome,state.raw,&force_direction);
+			neat_genome_evaluate(neat,genome,state.raw,state.raw,&force_direction,&force_direction);
 			_update_state(&state,FORCE*((force_direction>0)*2-1));
 			j++;
 		}
@@ -82,7 +82,7 @@ void cartpole_end_callback(const neat_t* neat,const neat_genome_t* genome){
 	_init_state(&state);
 	for (unsigned int i=0;fabs(state.x)<=MAX_X_VALUE&&fabs(state.angle)<=MAX_ANGLE_VALUE&&i<MAX_SIMULATION_STEPS;i++){
 		float force_direction;
-		neat_genome_evaluate(neat,genome,state.raw,&force_direction);
+		neat_genome_evaluate(neat,genome,state.raw,state.raw,&force_direction,&force_direction);
 		_update_state(&state,FORCE*((force_direction>0)*2-1));
 		printf("%f %f\n",state.x,state.angle);
 	}

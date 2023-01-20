@@ -204,61 +204,69 @@ void neat_deinit(neat_t* neat){
 
 
 
-void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out){
-	__attribute__((aligned(256))) float node_values[MAX_NODE_COUNT];
+void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in1,const float* in2,float* out1,float* out2){
+	__attribute__((aligned(256))) float node_values[MAX_NODE_COUNT<<1];
 	float* values=node_values;
 	__m256 zero=_mm256_setzero_ps();
 	for (unsigned int i=0;i<((genome->node_count+31)&0xffffffe0);i+=8){
 		if (i<neat->input_count){
-			_mm256_store_ps(values,_mm256_loadu_ps(in));
-			in+=8;
+			_mm256_store_ps(values,_mm256_loadu_ps(in1));
+			in1+=8;
+			values+=8;
+			_mm256_store_ps(values,_mm256_loadu_ps(in2));
+			in2+=8;
 		}
 		else{
+			_mm256_store_ps(values,zero);
+			values+=8;
 			_mm256_store_ps(values,zero);
 		}
 		values+=8;
 	}
-	if (neat->input_count&7){
-		switch (neat->input_count&7){
-			case 1:
-				node_values[neat->input_count+6]=0.0f;
-			case 2:
-				node_values[neat->input_count+5]=0.0f;
-			case 3:
-				node_values[neat->input_count+4]=0.0f;
-			case 4:
-				node_values[neat->input_count+3]=0.0f;
-			case 5:
-				node_values[neat->input_count+2]=0.0f;
-			case 6:
-				node_values[neat->input_count+1]=0.0f;
-			case 7:
-				node_values[neat->input_count]=0.0f;
-		}
-	}
 	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		values=node_values;
-		__m256 sum256a=_mm256_mul_ps(_mm256_load_ps(weights),_mm256_load_ps(values));
-		__m256 sum256b=_mm256_mul_ps(_mm256_load_ps(weights+8),_mm256_load_ps(values+8));
-		__m256 sum256c=_mm256_mul_ps(_mm256_load_ps(weights+16),_mm256_load_ps(values+16));
-		__m256 sum256d=_mm256_mul_ps(_mm256_load_ps(weights+24),_mm256_load_ps(values+24));
+		__m256 weight_vector_a=_mm256_load_ps(weights);
+		__m256 sum256a=_mm256_mul_ps(weight_vector_a,_mm256_load_ps(values));
+		__m256 sum256b=_mm256_mul_ps(weight_vector_a,_mm256_load_ps(values+8));
+		__m256 weight_vector_b=_mm256_load_ps(weights+8);
+		__m256 sum256c=_mm256_mul_ps(weight_vector_b,_mm256_load_ps(values+16));
+		__m256 sum256d=_mm256_mul_ps(weight_vector_b,_mm256_load_ps(values+24));
+		__m256 weight_vector_c=_mm256_load_ps(weights+16);
+		__m256 sum256e=_mm256_mul_ps(weight_vector_c,_mm256_load_ps(values+32));
+		__m256 sum256f=_mm256_mul_ps(weight_vector_c,_mm256_load_ps(values+40));
+		__m256 weight_vector_d=_mm256_load_ps(weights+24);
+		__m256 sum256g=_mm256_mul_ps(weight_vector_d,_mm256_load_ps(values+48));
+		__m256 sum256h=_mm256_mul_ps(weight_vector_d,_mm256_load_ps(values+56));
 		weights+=32;
 		unsigned int j=32;
 		while (j<i){
-			values+=32;
-			sum256a=_mm256_fmadd_ps(_mm256_load_ps(weights),_mm256_load_ps(values),sum256a);
-			sum256b=_mm256_fmadd_ps(_mm256_load_ps(weights+8),_mm256_load_ps(values+8),sum256b);
-			sum256c=_mm256_fmadd_ps(_mm256_load_ps(weights+16),_mm256_load_ps(values+16),sum256c);
-			sum256d=_mm256_fmadd_ps(_mm256_load_ps(weights+24),_mm256_load_ps(values+24),sum256d);
+			values+=64;
+			weight_vector_a=_mm256_load_ps(weights);
+			sum256a=_mm256_fmadd_ps(weight_vector_a,_mm256_load_ps(values),sum256a);
+			sum256b=_mm256_fmadd_ps(weight_vector_a,_mm256_load_ps(values+8),sum256b);
+			weight_vector_b=_mm256_load_ps(weights+8);
+			sum256c=_mm256_fmadd_ps(weight_vector_b,_mm256_load_ps(values+16),sum256c);
+			sum256d=_mm256_fmadd_ps(weight_vector_b,_mm256_load_ps(values+24),sum256d);
+			weight_vector_c=_mm256_load_ps(weights+16);
+			sum256e=_mm256_fmadd_ps(weight_vector_c,_mm256_load_ps(values+32),sum256e);
+			sum256f=_mm256_fmadd_ps(weight_vector_c,_mm256_load_ps(values+40),sum256f);
+			weight_vector_d=_mm256_load_ps(weights+24);
+			sum256g=_mm256_fmadd_ps(weight_vector_d,_mm256_load_ps(values+48),sum256g);
+			sum256h=_mm256_fmadd_ps(weight_vector_d,_mm256_load_ps(values+56),sum256h);
 			j+=32;
 			weights+=32;
 		}
 		weights+=((uint64_t)genome->node_count)-j;
-		node_values[i]=_activation_function(_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256b),_mm256_add_ps(sum256c,sum256d)))+(genome->nodes+i)->bias);
+		float value_a=_activation_function(_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256c),_mm256_add_ps(sum256e,sum256g)))+(genome->nodes+i)->bias);
+		float value_b=_activation_function(_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)))+(genome->nodes+i)->bias);
+		node_values[i+(i&0xfffffff8)]=value_a;
+		node_values[i+(i&0xfffffff8)+8]=value_b;
 		if (i>=genome->node_count-neat->output_count){
-			*out=node_values[i];
-			out++;
+			*out1=value_a;
+			out1++;
+			*out2=value_b;
+			out2++;
 		}
 	}
 }

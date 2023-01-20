@@ -92,7 +92,7 @@ void neat_deinit(neat_t* neat);
 
 
 
-void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in,float* out);
+void neat_genome_evaluate(const neat_t* neat,const neat_genome_t* genome,const float* in1,const float* in2,float* out1,float* out2);
 
 
 
