@@ -32,7 +32,7 @@ int main(void){
 	}
 	const neat_genome_t* best=neat_get_best(&neat);
 	double delta_time=(get_time()-start)*1e-9;
-	printf("Seed: %.8x, Time: %.3fs, Iterations: %u, Time per Iteration: %.6fs\n",seed,delta_time,i,delta_time/i);
+	printf("Seed: %.8x, Fitness Score: %.3f%%, Time: %.3fs, Iterations: %u, Time per Iteration: %.6fs\n",seed,best->fitness_score*100,delta_time,i,delta_time/i);
 	example->end_callback(&neat,best);
 	neat_model_t model;
 	neat_extract_model(&neat,best,&model);
