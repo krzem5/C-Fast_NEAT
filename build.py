@@ -17,7 +17,7 @@ if ("--release" in sys.argv):
 		for f in cfl:
 			if (f[-2:]==".c"):
 				fl.append(f"build/{(r+f).replace('/','$')}.o")
-				if (subprocess.run(["gcc","-Wall","-lm","-Werror","-march=native","-mno-avx256-split-unaligned-load","-ffast-math","-momit-leaf-frame-pointer","-Ofast","-c",r+f,"-o",f"build/{(r+f).replace('/','$')}.o","-Isrc/include","-g"]).returncode!=0):
+				if (subprocess.run(["gcc","-Wall","-lm","-Werror","-march=native","-mno-avx256-split-unaligned-load","-ffast-math","-momit-leaf-frame-pointer","-Ofast","-c",r+f,"-o",f"build/{(r+f).replace('/','$')}.o","-Isrc/include"]).returncode!=0):
 					sys.exit(1)
 	if (subprocess.run(["gcc","-o","build/fast_neat"]+fl+["-lm"]).returncode!=0):
 		sys.exit(1)
