@@ -140,9 +140,16 @@ static inline __m128 _activation_function_tanh(__m128 x){
 		_mm_fmadd_ps(
 			_mm_set_ps1(10.0f),
 			x,
-			_mm_fmadd_ps(x,x_sq,_mm_set_ps1(5.0f))
+			_mm_fmadd_ps(
+				x,
+				x_sq,
+				_mm_set_ps1(5.0f)
+			)
 		),
-		_mm_mul_ps(x_sq,_mm_set_ps1(0.13333333f)),
+		_mm_mul_ps(
+			x_sq,
+			_mm_set_ps1(0.13333333f)
+		),
 		x
 	);
 	__m128 x2=_mm_add_ps(x,_mm_set_ps1(1.0f));
@@ -150,7 +157,11 @@ static inline __m128 _activation_function_tanh(__m128 x){
 	return _mm_xor_ps(
 		_mm_mul_ps(
 			_mm_mul_ps(
-				_mm_fmsub_ps(tmp,x2,_mm_set_ps1(2.0f)),
+				_mm_fmsub_ps(
+					tmp,
+					x2,
+					_mm_set_ps1(2.0f)
+				),
 				tmp
 			),
 			x
