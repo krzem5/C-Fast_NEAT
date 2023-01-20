@@ -227,15 +227,15 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
 		values=node_values;
 		__m256 weight_vector_a=_mm256_load_ps(weights);
+		__m256 weight_vector_b=_mm256_load_ps(weights+8);
+		__m256 weight_vector_c=_mm256_load_ps(weights+16);
+		__m256 weight_vector_d=_mm256_load_ps(weights+24);
 		__m256 sum256a=_mm256_mul_ps(weight_vector_a,_mm256_load_ps(values));
 		__m256 sum256b=_mm256_mul_ps(weight_vector_a,_mm256_load_ps(values+8));
-		__m256 weight_vector_b=_mm256_load_ps(weights+8);
 		__m256 sum256c=_mm256_mul_ps(weight_vector_b,_mm256_load_ps(values+16));
 		__m256 sum256d=_mm256_mul_ps(weight_vector_b,_mm256_load_ps(values+24));
-		__m256 weight_vector_c=_mm256_load_ps(weights+16);
 		__m256 sum256e=_mm256_mul_ps(weight_vector_c,_mm256_load_ps(values+32));
 		__m256 sum256f=_mm256_mul_ps(weight_vector_c,_mm256_load_ps(values+40));
-		__m256 weight_vector_d=_mm256_load_ps(weights+24);
 		__m256 sum256g=_mm256_mul_ps(weight_vector_d,_mm256_load_ps(values+48));
 		__m256 sum256h=_mm256_mul_ps(weight_vector_d,_mm256_load_ps(values+56));
 		weights+=32;
@@ -243,15 +243,15 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 		while (j<i){
 			values+=64;
 			weight_vector_a=_mm256_load_ps(weights);
+			weight_vector_b=_mm256_load_ps(weights+8);
+			weight_vector_c=_mm256_load_ps(weights+16);
+			weight_vector_d=_mm256_load_ps(weights+24);
 			sum256a=_mm256_fmadd_ps(weight_vector_a,_mm256_load_ps(values),sum256a);
 			sum256b=_mm256_fmadd_ps(weight_vector_a,_mm256_load_ps(values+8),sum256b);
-			weight_vector_b=_mm256_load_ps(weights+8);
 			sum256c=_mm256_fmadd_ps(weight_vector_b,_mm256_load_ps(values+16),sum256c);
 			sum256d=_mm256_fmadd_ps(weight_vector_b,_mm256_load_ps(values+24),sum256d);
-			weight_vector_c=_mm256_load_ps(weights+16);
 			sum256e=_mm256_fmadd_ps(weight_vector_c,_mm256_load_ps(values+32),sum256e);
 			sum256f=_mm256_fmadd_ps(weight_vector_c,_mm256_load_ps(values+40),sum256f);
-			weight_vector_d=_mm256_load_ps(weights+24);
 			sum256g=_mm256_fmadd_ps(weight_vector_d,_mm256_load_ps(values+48),sum256g);
 			sum256h=_mm256_fmadd_ps(weight_vector_d,_mm256_load_ps(values+56),sum256h);
 			j+=32;
