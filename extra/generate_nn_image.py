@@ -13,6 +13,7 @@ EDGE_WIDTH=5
 ACTIVATION_FUNCTION_TANH=0
 ACTIVATION_FUNCTION_STEP=1
 ACTIVATION_FUNCTION_LINEAR=2
+ACTIVATION_FUNCTION_RELU=3
 
 
 
@@ -75,6 +76,8 @@ for name in os.listdir("../build"):
 				draw.ellipse((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
 			elif (nodes[i][1]==ACTIVATION_FUNCTION_STEP):
 				draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),width=0)
+			elif (nodes[i][1]==ACTIVATION_FUNCTION_LINEAR):
+				draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=None,width=5,outline=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))))
 			else:
-				raise RuntimeError
+				draw.regular_polygon((cx,cy,NODE_WIDTH),3,fill=tuple(map(lambda x:int(255*x),colorsys.hsv_to_rgb(t/3,1,1))),outline=None)
 		image.save(f"../build/{name[:-5]}.png")

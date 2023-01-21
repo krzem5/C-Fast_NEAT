@@ -14,7 +14,8 @@
 #define ACTIVATION_FUNCTION_TYPE_TANH 0
 #define ACTIVATION_FUNCTION_TYPE_STEP 1
 #define ACTIVATION_FUNCTION_TYPE_LINEAR 2
-#define ACTIVATION_FUNCTION_MAX_TYPE ACTIVATION_FUNCTION_TYPE_LINEAR
+#define ACTIVATION_FUNCTION_TYPE_RELU 3
+#define ACTIVATION_FUNCTION_MAX_TYPE ACTIVATION_FUNCTION_TYPE_RELU
 
 #define MUTATION_ACTION_TYPE_ADD_NODES 1
 #define MUTATION_ACTION_TYPE_ADJUST_EDGE 449
@@ -204,6 +205,21 @@ static inline __m128 _activation_function_linear(__m128 x){
 
 
 
+static inline __m128 _activation_function_relu(__m128 x){
+	return _mm_and_ps(
+		x,
+		_mm_castsi128_ps(_mm_sub_epi32(
+			_mm_srli_epi32(
+				_mm_castps_si128(x),
+				31
+			),
+			_mm_set1_epi32(1)
+		))
+	);
+}
+
+
+
 void neat_init(unsigned int input_count,unsigned int output_count,unsigned int population,neat_fitness_score_callback_t fitness_score_callback,neat_t* out){
 	out->input_count=input_count;
 	out->output_count=output_count;
@@ -322,6 +338,9 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 				break;
 			case ACTIVATION_FUNCTION_TYPE_LINEAR:
 				combined_value=_activation_function_linear(combined_value);
+				break;
+			case ACTIVATION_FUNCTION_TYPE_RELU:
+				combined_value=_activation_function_relu(combined_value);
 				break;
 		}
 		float processed_value_a=_mm_cvtss_f32(combined_value);
