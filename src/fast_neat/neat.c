@@ -224,7 +224,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->input_count=input_count;
 	out->output_count=output_count;
 	out->population=population;
-	out->_last_average_fitness_score=-1e8f;
+	out->_last_average_fitness_score=0.0f;
 	out->fitness_score_callback=fitness_score_callback;
 	for (unsigned int i=0;i<64;i++){
 		out->_prng_state.data[i]=(rand()&0xff)|((rand()&0xff)<<8)|((rand()&0xff)<<16)|((rand()&0xff)<<24);
@@ -417,7 +417,7 @@ float neat_update(neat_t* neat){
 				neat_genome_node_t* nodes=child->nodes;
 				neat_genome_edge_t* edges=child->edges;
 				for (unsigned int i=0;i<child->node_count;i++){
-					_Bool inserted_i=i>=insert_index_start&&i<=insert_index_end;
+					_Bool inserted_i=(i>=insert_index_start&&i<=insert_index_end);
 					if (inserted_i){
 						nodes->bias=0.0f;
 						nodes->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
