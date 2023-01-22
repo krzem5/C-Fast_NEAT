@@ -1,9 +1,5 @@
 #ifndef __NEAT_H__
-#define __NEAT_H__
-
-
-
-#define NEAT_EMPTY_EVALUATOR {0,NULL,NULL}
+#define __NEAT_H__ 1
 
 
 

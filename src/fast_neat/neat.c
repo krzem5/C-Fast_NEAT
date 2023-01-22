@@ -224,7 +224,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->input_count=input_count;
 	out->output_count=output_count;
 	out->population=population;
-	out->_last_average_fitness_score=0.0f;
+	out->_last_average_fitness_score=0.0f ;
 	out->fitness_score_callback=fitness_score_callback;
 	for (unsigned int i=0;i<64;i++){
 		out->_prng_state.data[i]=(rand()&0xff)|((rand()&0xff)<<8)|((rand()&0xff)<<16)|((rand()&0xff)<<24);
