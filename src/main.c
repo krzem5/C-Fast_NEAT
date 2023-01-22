@@ -23,7 +23,7 @@ int main(void){
 	neat_init(example->input_count,example->output_count,example->population,example->fitness_score_callback,&neat);
 	unsigned long int start=get_time();
 	unsigned int i=0;
-	for (;i<8192;i++){
+	for (;i<(1<<16);i++){
 		float best_fitness_score=neat_update(&neat);
 		printf("%.2f%%\n",best_fitness_score*100);
 		if (best_fitness_score>=example->max_fitness_score){
