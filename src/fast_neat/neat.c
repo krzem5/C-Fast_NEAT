@@ -568,11 +568,15 @@ void neat_extract_model(const neat_t* neat,const neat_genome_t* genome,neat_mode
 	out->edge_count=0;
 	out->nodes=malloc(out->node_count*sizeof(neat_model_node_t));
 	out->edges=malloc(genome->_node_count_sq*sizeof(neat_model_edge_t));
-	const neat_genome_edge_t* genome_edge=genome->edges;
-	neat_model_edge_t* edge=out->edges;
+	unsigned int offset=genome->node_count*neat->input_count;
+	const neat_genome_edge_t* genome_edge=genome->edges+offset;
+	neat_model_edge_t* edge=out->edges+offset;
 	for (unsigned int i=0;i<out->node_count;i++){
 		(out->nodes+i)->bias=(genome->nodes+i)->bias;
 		(out->nodes+i)->activation_function=(genome->nodes+i)->activation_function;
+		if (i<neat->input_count){
+			continue;
+		}
 		for (unsigned int j=0;j<out->node_count;j++){
 			edge->weight=genome_edge->weight;
 			if (edge->weight!=0.0f){
@@ -603,7 +607,7 @@ _Bool neat_save_model(const neat_model_t* model,const char* file_path){
 		model->input_count,
 		model->output_count,
 		model->node_count,
-		model->edge_count-offset
+		model->edge_count
 	};
 	if (fwrite(&header,sizeof(header),1,file)!=1){
 		goto _error;
