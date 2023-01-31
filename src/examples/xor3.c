@@ -29,6 +29,6 @@ void xor3_end_callback(const neat_t* neat,const neat_genome_t* genome){
 		float genome_out1;
 		float genome_out2;
 		neat_genome_evaluate(neat,genome,genome_in1,genome_in2,&genome_out1,&genome_out2);
-		printf("%u^%u^0=%.3f\n%u^%u^1=%.3f\n",i&1,(i>>1)&1,genome_out1*0.5f+0.5f,i&1,(i>>1)&1,genome_out2*0.5f+0.5f);
+		printf("%u^%u^0=%+.3f\n%u^%u^1=%+.3f\n",i&1,(i>>1)&1,genome_out1*0.5f+0.5f,i&1,(i>>1)&1,genome_out2*0.5f+0.5f);
 	}
 }
