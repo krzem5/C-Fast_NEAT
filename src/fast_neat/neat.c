@@ -10,6 +10,7 @@
 // MAX_NODE_COUNT must be a multiple of 32
 #define MAX_NODE_COUNT 512
 
+#define ENABLE_ACTIVATION_FUNCTION_SCALE 0
 #define ACTIVATION_FUNCTION_SCALE 1.0f
 #define ACTIVATION_FUNCTION_TYPE_TANH 0
 #define ACTIVATION_FUNCTION_TYPE_STEP 1
@@ -327,8 +328,11 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 		weights+=((uint64_t)genome->node_count)-j;
 		__m128 value_a=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256a,sum256c),_mm256_add_ps(sum256e,sum256g)));
 		__m128 value_b=_vector_sum(_mm256_add_ps(_mm256_add_ps(sum256b,sum256d),_mm256_add_ps(sum256f,sum256h)));
-		value_b=_mm_shuffle_ps(value_b,value_b,0b0000);
-		__m128 combined_value=_mm_fmadd_ps(_mm_blend_ps(value_a,value_b,0b10),_mm_set_ps1(ACTIVATION_FUNCTION_SCALE),_mm_set_ps1((genome->nodes+i)->bias*ACTIVATION_FUNCTION_SCALE));
+#if ENABLE_ACTIVATION_FUNCTION_SCALE
+		__m128 combined_value=_mm_fmadd_ps(_mm_blend_ps(value_a,_mm_shuffle_ps(value_b,value_b,0b0000),0b10),_mm_set_ps1(ACTIVATION_FUNCTION_SCALE),_mm_set_ps1((genome->nodes+i)->bias*ACTIVATION_FUNCTION_SCALE));
+#else
+		__m128 combined_value=_mm_add_ps(_mm_blend_ps(value_a,_mm_shuffle_ps(value_b,value_b,0b0000),0b10),_mm_set_ps1((genome->nodes+i)->bias));
+#endif
 		switch ((genome->nodes+i)->activation_function){
 			case ACTIVATION_FUNCTION_TYPE_TANH:
 				combined_value=_activation_function_tanh(combined_value);
