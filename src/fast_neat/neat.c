@@ -115,7 +115,7 @@ static inline const unsigned int* _random_uint256_ptr(neat_t* neat){
 
 static inline float _random_float(neat_t* neat){
 	neat->_prng_state.count--;
-	return (float)(((int32_t)(neat->_prng_state.data[neat->_prng_state.count]))>>7)*0x1p-24f;
+	return ((float)(((int32_t)(neat->_prng_state.data[neat->_prng_state.count]))>>7)*0x1p-24f)*0.5f;
 }
 
 
