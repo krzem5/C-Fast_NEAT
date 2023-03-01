@@ -8,7 +8,9 @@
 
 
 // MAX_NODE_COUNT must be a multiple of 32
-#define MAX_NODE_COUNT 512
+#define MAX_NODE_COUNT 256
+// MAX_ALLOWED_NODE_COUNT must be less than or equal to MAX_NODE_COUNT
+#define MAX_ALLOWED_NODE_COUNT 256
 
 #define ENABLE_ACTIVATION_FUNCTION_SCALE 0
 #define ACTIVATION_FUNCTION_SCALE 1.0f
@@ -19,15 +21,16 @@
 #define ACTIVATION_FUNCTION_MAX_TYPE ACTIVATION_FUNCTION_TYPE_RELU
 
 #define MUTATION_ACTION_TYPE_ADD_NODES 1
-#define MUTATION_ACTION_TYPE_ADJUST_EDGE 449
-#define MUTATION_ACTION_TYPE_SET_EDGE 109
-#define MUTATION_ACTION_TYPE_ADJUST_NODE 335
+#define MUTATION_ACTION_TYPE_ADJUST_EDGE 440
+#define MUTATION_ACTION_TYPE_SET_EDGE 100
+#define MUTATION_ACTION_TYPE_ADJUST_NODE 333
 #define MUTATION_ACTION_TYPE_SET_NODE 104
 #define MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION 25
+#define MUTATION_ACTION_TYPE_TOGGLE_NODE 20
 #define MUTATION_ACTION_MASK 0x3ff
 #define MAX_STALE_FITNESS_DIFFERENCE 1e-6f
 
-#if MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE+MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION!=MUTATION_ACTION_MASK
+#if MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE+MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION+MUTATION_ACTION_TYPE_TOGGLE_NODE!=MUTATION_ACTION_MASK
 #error Sum of mutation actions must be equal to MUTATION_ACTION_MASK
 #endif
 
@@ -52,6 +55,7 @@ typedef struct _NEAT_MODEL_FILE_EDGE{
 typedef struct __attribute__((packed)) _NEAT_MODEL_FILE_NODE{
 	float bias;
 	uint8_t activation_function;
+	uint8_t enabled;
 } neat_model_file_node_t;
 
 
@@ -248,6 +252,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		for (unsigned int j=0;j<node_count;j++){
 			node_data_ptr->bias=0.0f;
 			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
+			node_data_ptr->enabled=1;
 			node_data_ptr++;
 			for (unsigned int k=0;k<node_count;k++){
 				_random_ensure_count(out,1);
@@ -293,6 +298,10 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 	}
 	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
+		if (!(genome->nodes+i)->enabled&&i<genome->node_count-neat->output_count){
+			weights+=genome->node_count;
+			continue;
+		}
 		values=node_values;
 		__m256 weight_vector_a=_mm256_load_ps(weights);
 		__m256 weight_vector_b=_mm256_load_ps(weights+8);
@@ -411,7 +420,7 @@ float neat_update(neat_t* neat){
 		child->_node_count_sq=random_genome->_node_count_sq;
 		if (stale||(mutation_type&1)){
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
-			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_NODE_COUNT){
+			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_ALLOWED_NODE_COUNT){
 				child->node_count+=8;
 				child->_node_count_sq=child->node_count*child->node_count;
 				unsigned int insert_index_end=random_genome->node_count-neat->output_count;
@@ -425,10 +434,12 @@ float neat_update(neat_t* neat){
 					if (inserted_i){
 						nodes->bias=0.0f;
 						nodes->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
+						nodes->enabled=(i==insert_index_start);
 					}
 					else{
 						nodes->bias=random_genome_node->bias;
 						nodes->activation_function=random_genome_node->activation_function;
+						nodes->enabled=random_genome_node->enabled;
 						random_genome_node++;
 					}
 					nodes++;
@@ -473,8 +484,11 @@ _mutate_random_edge:
 				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE){
 					(child->nodes+_random_uint(neat,random_genome->node_count))->bias=_random_float(neat);
 				}
-				else{
+				else if (action<=MUTATION_ACTION_TYPE_ADD_NODES+MUTATION_ACTION_TYPE_ADJUST_EDGE+MUTATION_ACTION_TYPE_SET_EDGE+MUTATION_ACTION_TYPE_ADJUST_NODE+MUTATION_ACTION_TYPE_SET_NODE+MUTATION_ACTION_TYPE_SET_ACTIVATION_FUNCTION){
 					(child->nodes+_random_uint(neat,random_genome->node_count))->activation_function=_random_uint(neat,ACTIVATION_FUNCTION_MAX_TYPE);
+				}
+				else{
+					(child->nodes+_random_uint(neat,random_genome->node_count))->enabled^=1;
 				}
 			}
 		}
@@ -578,6 +592,7 @@ void neat_extract_model(const neat_t* neat,const neat_genome_t* genome,neat_mode
 	for (unsigned int i=0;i<out->node_count;i++){
 		(out->nodes+i)->bias=(genome->nodes+i)->bias;
 		(out->nodes+i)->activation_function=(genome->nodes+i)->activation_function;
+		(out->nodes+i)->enabled=(genome->nodes+i)->enabled;
 		if (i<neat->input_count){
 			continue;
 		}
@@ -620,7 +635,8 @@ _Bool neat_save_model(const neat_model_t* model,const char* file_path){
 	for (unsigned int i=model->input_count;i<model->node_count;i++){
 		neat_model_file_node_t node_data={
 			node->bias,
-			node->activation_function
+			node->activation_function,
+			node->enabled
 		};
 		if (fwrite(&node_data,sizeof(neat_model_file_node_t),1,file)!=1){
 			goto _error;

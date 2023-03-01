@@ -1,5 +1,6 @@
 #ifndef __NEAT_H__
 #define __NEAT_H__ 1
+#include <stdint.h>
 
 
 
@@ -9,7 +10,8 @@ struct _NEAT;
 
 typedef struct _NEAT_GENOME_NODE{
 	float bias;
-	unsigned int activation_function;
+	uint16_t activation_function;
+	uint16_t enabled;
 } neat_genome_node_t;
 
 
@@ -60,7 +62,8 @@ typedef struct _NEAT{
 
 typedef struct _NEAT_MODEL_NODE{
 	float bias;
-	unsigned int activation_function;
+	uint16_t activation_function;
+	uint16_t enabled;
 } neat_model_node_t;
 
 
