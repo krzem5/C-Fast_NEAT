@@ -447,7 +447,7 @@ float neat_update(neat_t* neat){
 					_Bool inserted_i=(i>=insert_index_start&&i<=insert_index_end);
 					if (inserted_i){
 						nodes->bias=0.0f;
-						nodes->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
+						nodes->activation_function=ACTIVATION_FUNCTION_TYPE_LINEAR;
 						nodes->enabled=(i==insert_index_start);
 					}
 					else{
