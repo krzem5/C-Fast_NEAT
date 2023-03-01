@@ -28,6 +28,8 @@ int main(void){
 		printf("%.2f%%\n",best_fitness_score*100);
 		if (neat.stale_iteration_count>=8192&&best_fitness_score<example->max_fitness_score*0.5f){
 			neat_reset_genomes(&neat);
+			start=_current_time();
+			i=0;
 		}
 		if (best_fitness_score>=example->max_fitness_score){
 			break;
