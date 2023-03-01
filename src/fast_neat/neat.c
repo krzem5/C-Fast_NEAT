@@ -8,7 +8,7 @@
 
 
 // MAX_NODE_COUNT must be a multiple of 32
-#define MAX_NODE_COUNT 256
+#define MAX_NODE_COUNT 512
 
 #define ENABLE_ACTIVATION_FUNCTION_SCALE 0
 #define ACTIVATION_FUNCTION_SCALE 1.0f

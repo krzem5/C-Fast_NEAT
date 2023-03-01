@@ -6,10 +6,11 @@
 
 
 
+// MAX_LETTER_COUNT*26 must be a multiple of 8
 #define MAX_LETTER_COUNT 12
 #define LANGUAGE_COUNT 2
 #define WORD_COUNT 1000
-#define TEST_WORD_COUNT 500
+#define TEST_WORD_COUNT 1000
 
 
 
