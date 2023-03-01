@@ -34,6 +34,9 @@
 #error Sum of mutation actions must be equal to MUTATION_ACTION_MASK
 #endif
 
+#define STALENESS_BEST_SCORE_DIFFERENCE 0.001f
+#define STALENESS_MAX_STALE_ITERATIONS 1024
+
 
 
 typedef struct _NEAT_MODEL_FILE_HEADER{
@@ -252,7 +255,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		for (unsigned int j=0;j<node_count;j++){
 			node_data_ptr->bias=0.0f;
 			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
-			node_data_ptr->enabled=1;
+			node_data_ptr->enabled=(j<input_count||j>=node_count-output_count);
 			node_data_ptr++;
 			for (unsigned int k=0;k<node_count;k++){
 				_random_ensure_count(out,1);
@@ -265,6 +268,8 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 		genome++;
 	}
 	out->_fitness_score_sum=0.0f;
+	out->_last_best_genome_fitness=0.0f;
+	out->_stale_iteration_count=0;
 }
 
 
@@ -284,17 +289,15 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 	for (unsigned int i=0;i<((genome->node_count+31)&0xffffffe0);i+=8){
 		if (i<neat->input_count){
 			_mm256_store_ps(values,_mm256_loadu_ps(in1));
+			_mm256_store_ps(values+8,_mm256_loadu_ps(in2));
 			in1+=8;
-			values+=8;
-			_mm256_store_ps(values,_mm256_loadu_ps(in2));
 			in2+=8;
 		}
 		else{
 			_mm256_store_ps(values,zero);
-			values+=8;
-			_mm256_store_ps(values,zero);
+			_mm256_store_ps(values+8,zero);
 		}
-		values+=8;
+		values+=16;
 	}
 	const float* weights=(const float*)(genome->edges+neat->input_count*genome->node_count);
 	for (unsigned int i=neat->input_count;i<genome->node_count;i++){
@@ -560,6 +563,17 @@ _mutate_random_edge:
 		}
 		child++;
 	}
+	float fitness_sum_diff=neat->_last_best_genome_fitness-best_genome_fitness;
+	if (fabs(fitness_sum_diff)<STALENESS_BEST_SCORE_DIFFERENCE){
+		neat->_stale_iteration_count++;
+		if (neat->_stale_iteration_count>STALENESS_MAX_STALE_ITERATIONS){
+			printf("Stale!\n");
+		}
+	}
+	else{
+		neat->_stale_iteration_count=0;
+	}
+	neat->_last_best_genome_fitness=best_genome_fitness;
 	return best_genome_fitness;
 }
 

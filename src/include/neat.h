@@ -55,6 +55,8 @@ typedef struct _NEAT{
 	neat_genome_node_t* _node_data;
 	neat_genome_edge_t* _edge_data;
 	float _fitness_score_sum;
+	float _last_best_genome_fitness;
+	unsigned int _stale_iteration_count;
 	neat_prng_t _prng_state;
 } neat_t;
 
