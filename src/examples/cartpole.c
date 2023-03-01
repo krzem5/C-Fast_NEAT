@@ -27,8 +27,9 @@ typedef struct _STATE{
 			float velocity;
 			float angle;
 			float angular_velocity;
+			float zero[4];
 		};
-		float raw[4];
+		float raw[8];
 	};
 } state_t;
 
@@ -39,6 +40,7 @@ static void _init_state(state_t* out){
 	for (unsigned int i=0;i<4;i++){
 		out->raw[i]=example_random_uniform(MIN_START_VALUE-MAX_START_VALUE,MAX_START_VALUE-MIN_START_VALUE);
 		out->raw[i]+=MIN_START_VALUE*(out->raw[i]<0?-1:1);
+		out->raw[i+4]=0.0f;
 	}
 }
 
