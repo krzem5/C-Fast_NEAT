@@ -26,7 +26,7 @@ int main(void){
 	unsigned int i=0;
 	for (;i<65536;i++){
 		float best_fitness_score=neat_update(&neat);
-		printf("%.2f%% (%u)\n",best_fitness_score*100,neat._stale_iteration_count);
+		printf("%.2f%%\n",best_fitness_score*100);
 		if (best_fitness_score>=example->max_fitness_score){
 			break;
 		}
