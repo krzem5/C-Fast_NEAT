@@ -35,7 +35,7 @@
 #endif
 
 #define STALENESS_BEST_SCORE_DIFFERENCE 0.001f
-#define STALENESS_MAX_STALE_ITERATIONS 1024
+#define STALENESS_MAX_STALE_ITERATIONS 4096
 
 
 
@@ -563,10 +563,11 @@ _mutate_random_edge:
 		}
 		child++;
 	}
-	float fitness_sum_diff=neat->_last_best_genome_fitness-best_genome_fitness;
-	if (fabs(fitness_sum_diff)<STALENESS_BEST_SCORE_DIFFERENCE){
+	float best_genome_fitness_diff=neat->_last_best_genome_fitness-best_genome_fitness;
+	if (fabs(best_genome_fitness_diff)<STALENESS_BEST_SCORE_DIFFERENCE){
 		neat->_stale_iteration_count++;
 		if (neat->_stale_iteration_count>STALENESS_MAX_STALE_ITERATIONS){
+			// d
 			printf("Stale iterations!\n");
 		}
 	}

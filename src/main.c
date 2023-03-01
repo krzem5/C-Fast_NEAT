@@ -17,7 +17,7 @@ static unsigned long int _current_time(void){
 
 int main(void){
 	unsigned int seed=_current_time()&0xffffffff;
-	seed=0xb9b5af31;// This seed removes all links between input and output nodes in 'xor3' example, therefore making it unable to learn and regain its input connections
+	// seed=0xb9b5af31;// This seed removes all links between input and output nodes in 'xor3' example, therefore making it unable to learn and regain its input connections
 	srand(seed);
 	const example_t* example=example_get("xor3");
 	neat_t neat;
