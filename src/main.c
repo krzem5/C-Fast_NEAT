@@ -17,7 +17,6 @@ static unsigned long int _current_time(void){
 
 int main(void){
 	unsigned int seed=_current_time()&0xffffffff;
-	// seed=0xb9b5af31;// This seed removes all links between input and output nodes in 'xor3' example, therefore making it unable to learn and regain its input connections
 	srand(seed);
 	const example_t* example=example_get("xor3");
 	neat_t neat;
@@ -27,6 +26,9 @@ int main(void){
 	for (;i<65536;i++){
 		float best_fitness_score=neat_update(&neat);
 		printf("%.2f%%\n",best_fitness_score*100);
+		if (neat.stale_iteration_count>=8192&&best_fitness_score<example->max_fitness_score*0.75f){
+			neat_reset_genomes(&neat);
+		}
 		if (best_fitness_score>=example->max_fitness_score){
 			break;
 		}

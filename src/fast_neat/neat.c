@@ -35,7 +35,6 @@
 #endif
 
 #define STALENESS_BEST_SCORE_DIFFERENCE 0.001f
-#define STALENESS_MAX_STALE_ITERATIONS 4096
 
 
 
@@ -241,35 +240,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->genomes=aligned_alloc(32,population*sizeof(neat_genome_t));
 	out->_node_data=aligned_alloc(32,population*MAX_NODE_COUNT*sizeof(neat_genome_node_t));
 	out->_edge_data=aligned_alloc(32,population*MAX_NODE_COUNT*MAX_NODE_COUNT*sizeof(neat_genome_edge_t));
-	unsigned int node_count=(input_count+output_count+7)&0xfffffff8;
-	unsigned int node_count_sq=node_count*node_count;
-	neat_genome_t* genome=out->genomes;
-	neat_genome_node_t* node_data_ptr=out->_node_data;
-	neat_genome_edge_t* edge_data_ptr=out->_edge_data;
-	for (unsigned int i=0;i<population;i++){
-		genome->node_count=node_count;
-		genome->fitness_score=0.0f;
-		genome->nodes=node_data_ptr;
-		genome->edges=edge_data_ptr;
-		genome->_node_count_sq=node_count_sq;
-		for (unsigned int j=0;j<node_count;j++){
-			node_data_ptr->bias=0.0f;
-			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
-			node_data_ptr->enabled=(j<input_count||j>=node_count-output_count);
-			node_data_ptr++;
-			for (unsigned int k=0;k<node_count;k++){
-				_random_ensure_count(out,1);
-				edge_data_ptr->weight=_random_float(out);
-				edge_data_ptr++;
-			}
-		}
-		node_data_ptr+=MAX_NODE_COUNT-node_count;
-		edge_data_ptr+=(MAX_NODE_COUNT-node_count)*(MAX_NODE_COUNT-node_count);
-		genome++;
-	}
-	out->_fitness_score_sum=0.0f;
-	out->_last_best_genome_fitness=0.0f;
-	out->_stale_iteration_count=0;
+	neat_reset_genomes(out);
 }
 
 
@@ -278,6 +249,40 @@ void neat_deinit(neat_t* neat){
 	free(neat->genomes);
 	free(neat->_edge_data);
 	free(neat->_node_data);
+}
+
+
+
+void neat_reset_genomes(neat_t* neat){
+	unsigned int node_count=(neat->input_count+neat->output_count+7)&0xfffffff8;
+	unsigned int node_count_sq=node_count*node_count;
+	neat_genome_t* genome=neat->genomes;
+	neat_genome_node_t* node_data_ptr=neat->_node_data;
+	neat_genome_edge_t* edge_data_ptr=neat->_edge_data;
+	for (unsigned int i=0;i<neat->population;i++){
+		genome->node_count=node_count;
+		genome->fitness_score=0.0f;
+		genome->nodes=node_data_ptr;
+		genome->edges=edge_data_ptr;
+		genome->_node_count_sq=node_count_sq;
+		for (unsigned int j=0;j<node_count;j++){
+			node_data_ptr->bias=0.0f;
+			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
+			node_data_ptr->enabled=(j<neat->input_count||j>=node_count-neat->output_count);
+			node_data_ptr++;
+			for (unsigned int k=0;k<node_count;k++){
+				_random_ensure_count(neat,1);
+				edge_data_ptr->weight=_random_float(neat);
+				edge_data_ptr++;
+			}
+		}
+		node_data_ptr+=MAX_NODE_COUNT-node_count;
+		edge_data_ptr+=(MAX_NODE_COUNT-node_count)*(MAX_NODE_COUNT-node_count);
+		genome++;
+	}
+	neat->_fitness_score_sum=0.0f;
+	neat->_last_best_genome_fitness=0.0f;
+	neat->stale_iteration_count=0;
 }
 
 
@@ -565,16 +570,12 @@ _mutate_random_edge:
 	}
 	float best_genome_fitness_diff=neat->_last_best_genome_fitness-best_genome_fitness;
 	if (fabs(best_genome_fitness_diff)<STALENESS_BEST_SCORE_DIFFERENCE){
-		neat->_stale_iteration_count++;
-		if (neat->_stale_iteration_count>STALENESS_MAX_STALE_ITERATIONS){
-			// d
-			printf("Stale iterations!\n");
-		}
+		neat->stale_iteration_count++;
 	}
 	else{
-		neat->_stale_iteration_count=0;
+		neat->stale_iteration_count=0;
+		neat->_last_best_genome_fitness=best_genome_fitness;
 	}
-	neat->_last_best_genome_fitness=best_genome_fitness;
 	return best_genome_fitness;
 }
 
