@@ -567,7 +567,7 @@ _mutate_random_edge:
 	if (fabs(fitness_sum_diff)<STALENESS_BEST_SCORE_DIFFERENCE){
 		neat->_stale_iteration_count++;
 		if (neat->_stale_iteration_count>STALENESS_MAX_STALE_ITERATIONS){
-			printf("Stale!\n");
+			printf("Stale iterations!\n");
 		}
 	}
 	else{
