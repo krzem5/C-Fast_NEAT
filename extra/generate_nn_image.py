@@ -14,7 +14,7 @@ ACTIVATION_FUNCTION_TANH=0
 ACTIVATION_FUNCTION_STEP=1
 ACTIVATION_FUNCTION_LINEAR=2
 ACTIVATION_FUNCTION_RELU=3
-_ACTIVATION_FUNCTION_INPUT=4
+_ACTIVATION_FUNCTION_FLAG_INPUT=4
 
 
 
@@ -23,10 +23,13 @@ for name in os.listdir("../build"):
 		continue
 	with open(f"../build/{name}","rb") as rf:
 		input_count,output_count,node_count,edge_count=struct.unpack("<IIII",rf.read(16))
-		nodes=[(0.0,_ACTIVATION_FUNCTION_INPUT,1) for _ in range(0,input_count)]
+		nodes=[(0.0,ACTIVATION_FUNCTION_LINEAR|_ACTIVATION_FUNCTION_FLAG_INPUT,1) for _ in range(0,input_count)]
 		edges=[0.0 for _ in range(0,node_count*node_count)]
 		for i in range(0,node_count-input_count):
-			nodes.append(struct.unpack("<fBB",rf.read(6)))
+			node=struct.unpack("<fBB",rf.read(6))
+			if (i>=node_count-input_count-output_count):
+				node=(node[0],node[1],1)
+			nodes.append(node)
 		for i in range(0,edge_count):
 			j,weight=struct.unpack("<If",rf.read(8))
 			edges[j]=weight
@@ -72,11 +75,10 @@ for name in os.listdir("../build"):
 				t=int(255*min(max(weight/(2*weight_range)+0.5,0),1))
 				draw.line((node_layer_position[i],node_layer_position[j]),fill=(t,t,t),width=EDGE_WIDTH)
 		for i,(cx,cy) in enumerate(node_layer_position):
-			t=min(max(nodes[i][0]/(2*bias_range)+0.5,0),1)
-			color=(colorsys.hsv_to_rgb(t/3,1,1) if nodes[i][2] else (0.85,0.15,0.85))
+			color=(colorsys.hsv_to_rgb(min(max(nodes[i][0]/(2*bias_range)+0.5,0),1)/3,1,1) if nodes[i][2] else (0.85,0.15,0.85))
 			type=nodes[i][1]
-			if (type==_ACTIVATION_FUNCTION_INPUT):
-				type=ACTIVATION_FUNCTION_LINEAR
+			if (type&_ACTIVATION_FUNCTION_FLAG_INPUT):
+				type&=~_ACTIVATION_FUNCTION_FLAG_INPUT
 				color=(0.15,0.65,0.65)
 			if (type==ACTIVATION_FUNCTION_TANH):
 				draw.ellipse((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=tuple(map(lambda x:int(255*x),color)),width=0)
