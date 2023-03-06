@@ -1,5 +1,5 @@
-#ifndef __NEAT_H__
-#define __NEAT_H__ 1
+#ifndef _NEAT_H_
+#define _NEAT_H_ 1
 #include <stdint.h>
 
 
