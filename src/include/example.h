@@ -1,5 +1,5 @@
-#ifndef __EXAMPLE_H__
-#define __EXAMPLE_H__ 1
+#ifndef _EXAMPLE_H_
+#define _EXAMPLE_H_ 1
 #include <neat.h>
 
 
