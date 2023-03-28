@@ -28,7 +28,7 @@ typedef struct _NEAT_GENOME{
 	neat_genome_node_t* nodes;
 	neat_genome_edge_t* edges;
 	unsigned int _node_count_sq;
-	unsigned char _padding[4];
+	unsigned int _enabled_node_count;
 } neat_genome_t;
 
 

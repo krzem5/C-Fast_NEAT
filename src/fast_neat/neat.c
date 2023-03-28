@@ -271,6 +271,7 @@ void neat_reset_genomes(neat_t* neat){
 		genome->nodes=node_data_ptr;
 		genome->edges=edge_data_ptr;
 		genome->_node_count_sq=node_count_sq;
+		genome->_enabled_node_count=node_count;
 		for (unsigned int j=0;j<node_count;j++){
 			node_data_ptr->bias=0.0f;
 			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
@@ -433,6 +434,7 @@ float neat_update(neat_t* neat){
 		child->node_count=random_genome->node_count;
 		child->_node_count_sq=random_genome->_node_count_sq;
 		if (stale||(mutation_type&1)){
+			child->_enabled_node_count=random_genome->_enabled_node_count;
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_ALLOWED_NODE_COUNT){
 				child->node_count+=8;
@@ -468,6 +470,7 @@ float neat_update(neat_t* neat){
 						edges++;
 					}
 				}
+				child->_enabled_node_count++;
 				goto _mutate_random_edge;
 			}
 			else{
@@ -502,42 +505,15 @@ _mutate_random_edge:
 					(child->nodes+_random_uint(neat,random_genome->node_count))->activation_function=_random_uint(neat,ACTIVATION_FUNCTION_MAX_TYPE);
 				}
 				else{
-					(child->nodes+_random_uint(neat,random_genome->node_count))->enabled^=1;
+					uint16_t* enabled=&((child->nodes+_random_uint(neat,random_genome->node_count))->enabled);
+					child->_enabled_node_count+=(*enabled?-1:1);
+					(*enabled)^=1;
 				}
 			}
 		}
 		else{
 			const neat_genome_t* second_random_genome=neat->genomes+_random_uint(neat,surviving_genome_count);
 			unsigned int min_node_count=(second_random_genome->node_count<random_genome->node_count?second_random_genome:random_genome)->node_count;
-			const float* first_edges=(const float*)(random_genome->edges);
-			float* child_edges=(float*)(child->edges);
-			for (unsigned int i=0;i<min_node_count;i++){
-				const float* second_edges=(const float*)(second_random_genome->edges+i*second_random_genome->node_count);
-				__m256i random_vector=_mm256_undefined_si256();
-				for (unsigned int j=0;j<min_node_count;j+=8){
-					if (!(j&255)){
-						_random_ensure_count(neat,8);
-						random_vector=_mm256_loadu_si256(_random_uint256_ptr(neat));
-					}
-					_mm256_store_ps(child_edges,_mm256_blendv_ps(_mm256_load_ps(first_edges),_mm256_load_ps(second_edges),_mm256_castsi256_ps(random_vector)));
-					child_edges+=8;
-					first_edges+=8;
-					second_edges+=8;
-					random_vector=_mm256_slli_epi32(random_vector,1);
-				}
-				for (unsigned int j=min_node_count;j<random_genome->node_count;j+=8){
-					_mm256_store_ps(child_edges,_mm256_load_ps(first_edges));
-					child_edges+=8;
-					first_edges+=8;
-				}
-			}
-			for (unsigned int i=min_node_count;i<random_genome->node_count;i++){
-				for (unsigned int j=0;j<random_genome->node_count;j+=8){
-					_mm256_store_ps(child_edges,_mm256_load_ps(first_edges));
-					child_edges+=8;
-					first_edges+=8;
-				}
-			}
 			const double* first_nodes=(const double*)(random_genome->nodes);
 			const double* second_nodes=(const double*)(second_random_genome->nodes);
 			double* child_nodes=(double*)(child->nodes);
@@ -557,6 +533,36 @@ _mutate_random_edge:
 				_mm256_store_pd(child_nodes,_mm256_load_pd(first_nodes));
 				child_nodes+=4;
 				first_nodes+=4;
+			}
+			child->_enabled_node_count=0;
+			const float* first_edges=(const float*)(random_genome->edges);
+			float* child_edges=(float*)(child->edges);
+			for (unsigned int i=0;i<min_node_count;i++){
+				const float* second_edges=(const float*)(second_random_genome->edges+i*second_random_genome->node_count);
+				for (unsigned int j=0;j<min_node_count;j+=8){
+					if (!(j&255)){
+						_random_ensure_count(neat,8);
+						random_vector=_mm256_loadu_si256(_random_uint256_ptr(neat));
+					}
+					_mm256_store_ps(child_edges,_mm256_blendv_ps(_mm256_load_ps(first_edges),_mm256_load_ps(second_edges),_mm256_castsi256_ps(random_vector)));
+					child_edges+=8;
+					first_edges+=8;
+					second_edges+=8;
+					random_vector=_mm256_slli_epi32(random_vector,1);
+				}
+				for (unsigned int j=min_node_count;j<random_genome->node_count;j+=8){
+					_mm256_store_ps(child_edges,_mm256_load_ps(first_edges));
+					child_edges+=8;
+					first_edges+=8;
+				}
+				child->_enabled_node_count+=(child->nodes+i)->enabled;
+			}
+			for (unsigned int i=min_node_count;i<random_genome->node_count;i++){
+				for (unsigned int j=0;j<random_genome->node_count;j+=8){
+					_mm256_store_ps(child_edges,_mm256_load_ps(first_edges));
+					child_edges+=8;
+					first_edges+=8;
+				}
 			}
 		}
 		if (idx&31){
