@@ -75,10 +75,7 @@ typedef union _FLOAT_DATA{
 
 
 
-static void _random_ensure_count(neat_t* neat,unsigned int count){
-	if (neat->_prng_state.count>=count){
-		return;
-	}
+static void _random_regenerate_bits(neat_t* neat){
 	__m256i* ptr=(__m256i*)(neat->_prng_state.data);
 	__m256i permute_a=_mm256_set_epi32(4,3,2,1,0,7,6,5);
 	__m256i permute_b=_mm256_set_epi32(2,1,0,7,6,5,4,3);
@@ -107,6 +104,14 @@ static void _random_ensure_count(neat_t* neat,unsigned int count){
 	_mm256_storeu_si256(ptr+6,_mm256_xor_si256(s0,s3));
 	_mm256_storeu_si256(ptr+7,_mm256_xor_si256(s2,s1));
 	neat->_prng_state.count=64;
+}
+
+
+
+static inline void _random_ensure_count(neat_t* neat,unsigned int count){
+	if (neat->_prng_state.count<count){
+		_random_regenerate_bits(neat);
+	}
 }
 
 
@@ -237,7 +242,7 @@ void neat_init(unsigned int input_count,unsigned int output_count,unsigned int p
 	out->input_count=input_count;
 	out->output_count=output_count;
 	out->population=population;
-	out->_last_average_fitness_score=0.0f ;
+	out->_last_average_fitness_score=0.0f;
 	out->fitness_score_callback=fitness_score_callback;
 	for (unsigned int i=0;i<64;i++){
 		out->_prng_state.data[i]=(rand()&0xff)|((rand()&0xff)<<8)|((rand()&0xff)<<16)|((rand()&0xff)<<24);
