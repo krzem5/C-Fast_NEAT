@@ -276,7 +276,7 @@ void neat_reset_genomes(neat_t* neat){
 		genome->nodes=node_data_ptr;
 		genome->edges=edge_data_ptr;
 		genome->_node_count_sq=node_count_sq;
-		genome->_enabled_node_count=node_count;
+		genome->_enabled_node_count=neat->input_count+neat->output_count;
 		for (unsigned int j=0;j<node_count;j++){
 			node_data_ptr->bias=0.0f;
 			node_data_ptr->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
