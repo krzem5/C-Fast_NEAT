@@ -205,9 +205,9 @@ static inline __m128 _activation_function_tanh(__m128 x){
 static inline __m128 _activation_function_step(__m128 x){
 	return _mm_add_ps(
 		_mm_set_ps1(1.0f),
-		_mm_castsi128_ps(_mm_mul_epi32(
+		_mm_castsi128_ps(_mm_and_si128(
 			_mm_castps_si128(_mm_set_ps1(-2.0f)),
-			_mm_srli_epi32(
+			_mm_srai_epi32(
 				_mm_castps_si128(x),
 				31
 			)
@@ -377,7 +377,7 @@ void __attribute__((flatten,hot,no_stack_protector)) neat_genome_evaluate(const 
 				break;
 		}
 		float processed_value_a=_mm_cvtss_f32(combined_value);
-		float processed_value_b=_mm_cvtss_f32(_mm_shuffle_ps(combined_value,combined_value,0b10));
+		float processed_value_b=_mm_cvtss_f32(_mm_shuffle_ps(combined_value,combined_value,1));
 		node_values[i+(i&0xfffffff8)]=processed_value_a;
 		node_values[i+(i&0xfffffff8)+8]=processed_value_b;
 		if (i>=genome->node_count-neat->output_count){
@@ -603,7 +603,7 @@ const neat_genome_t* neat_get_best(const neat_t* neat){
 	const neat_genome_t* genome=out+1;
 	for (unsigned int i=1;i<neat->population;i++){
 		if (genome->fitness_score>out->fitness_score){
-			genome=out;
+			out=genome;
 		}
 		genome++;
 	}
