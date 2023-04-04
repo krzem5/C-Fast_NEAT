@@ -203,7 +203,7 @@ static inline __m128 _activation_function_tanh(__m128 x){
 
 
 static inline __m128 _activation_function_step(__m128 x){
-	return _mm_sub_ps(
+	return _mm_add_ps(
 		_mm_set_ps1(1.0f),
 		_mm_castsi128_ps(_mm_mul_epi32(
 			_mm_castps_si128(_mm_set_ps1(-2.0f)),
