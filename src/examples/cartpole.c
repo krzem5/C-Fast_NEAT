@@ -62,17 +62,31 @@ static void _update_state(state_t* state,float force){
 
 float cartpole_fitness_score_callback(const neat_t* neat,const neat_genome_t* genome){
 	unsigned int out=0;
-	for (unsigned int i=0;i<SIMULATION_COUNT;i++){
-		state_t state;
-		_init_state(&state);
+	for (unsigned int i=0;i<SIMULATION_COUNT;i+=2){
+		state_t states[2];
+		_init_state(states);
+		_init_state(states+1);
+		unsigned int state_time[2]={0,0};
+		unsigned int state_count;
 		unsigned int j=0;
-		while (fabs(state.x)<=MAX_X_VALUE&&fabs(state.angle)<=MAX_ANGLE_VALUE&&j<MAX_SIMULATION_STEPS){
-			float force_direction;
-			neat_genome_evaluate(neat,genome,state.raw,state.raw,&force_direction,&force_direction);
-			_update_state(&state,FORCE*((force_direction>0)*2-1));
+		do{
 			j++;
-		}
-		out+=j;
+			float force_directions[2];
+			neat_genome_evaluate(neat,genome,states[0].raw,states[1].raw,force_directions,force_directions+1);
+			state_count=2;
+			for (unsigned int k=0;k<2;k++){
+				if (fabs(states[k].x)<=MAX_X_VALUE&&fabs(states[k].angle)<=MAX_ANGLE_VALUE&&j<MAX_SIMULATION_STEPS){
+					_update_state(states+k,FORCE*((force_directions[k]>0)*2-1));
+				}
+				else{
+					state_count--;
+					if (!state_time[k]){
+						state_time[k]=j;
+					}
+				}
+			}
+		} while (state_count);
+		out+=state_time[0]+state_time[1];
 	}
 	return ((float)out)/(SIMULATION_COUNT*MAX_SIMULATION_STEPS);
 }
