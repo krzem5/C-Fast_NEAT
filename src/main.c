@@ -18,7 +18,7 @@ static unsigned long int _current_time(void){
 int main(void){
 	unsigned int seed=_current_time()&0xffffffff;
 	srand(seed);
-	const example_t* example=example_get("cartpole");
+	const example_t* example=example_get("xor3");
 	neat_t neat;
 	neat_init(example->input_count,example->output_count,example->population,example->fitness_score_callback,&neat);
 	unsigned long int start=_current_time();
