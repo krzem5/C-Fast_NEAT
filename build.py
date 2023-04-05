@@ -33,4 +33,5 @@ else:
 	if (subprocess.run(["gcc","-g","-o","build/fast_neat"]+fl+["-lm"]).returncode!=0):
 		sys.exit(1)
 if ("--run" in sys.argv):
-	subprocess.run(["build/fast_neat"]+DEFAULT_ARGS)
+	if (subprocess.run(["build/fast_neat"]+DEFAULT_ARGS).returncode==0):
+		subprocess.run(["python3","extra/generate_nn_image.py"])

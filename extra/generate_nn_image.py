@@ -18,10 +18,10 @@ _ACTIVATION_FUNCTION_FLAG_INPUT=4
 
 
 
-for name in os.listdir("../build"):
+for name in os.listdir("build"):
 	if (not name.endswith(".neat")):
 		continue
-	with open(f"../build/{name}","rb") as rf:
+	with open(f"build/{name}","rb") as rf:
 		input_count,output_count,node_count,edge_count=struct.unpack("<IIII",rf.read(16))
 		nodes=[(0.0,ACTIVATION_FUNCTION_LINEAR|_ACTIVATION_FUNCTION_FLAG_INPUT,1) for _ in range(0,input_count)]
 		edges=[0.0 for _ in range(0,node_count*node_count)]
@@ -88,4 +88,4 @@ for name in os.listdir("../build"):
 				draw.rectangle((cx-NODE_WIDTH/2,cy-NODE_WIDTH/2,cx+NODE_WIDTH/2,cy+NODE_WIDTH/2),fill=None,width=5,outline=tuple(map(lambda x:int(255*x),color)))
 			else:
 				draw.regular_polygon((cx,cy,NODE_WIDTH),3,fill=tuple(map(lambda x:int(255*x),color)),outline=None)
-		image.save(f"../build/{name[:-5]}.png")
+		image.save(f"build/{name[:-5]}.png")
