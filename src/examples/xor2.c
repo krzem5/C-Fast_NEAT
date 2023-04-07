@@ -11,8 +11,8 @@
 float xor2_fitness_score_callback(neat_t* neat,const neat_genome_t* genome){
 	float out=0.0f;
 	for (unsigned int i=0;i<2;i++){
-		float genome_in1[8]={(float)i,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
-		float genome_in2[8]={(float)i,1.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		float genome_in1[8]={(float)i+neat_random_float(neat),0.0f+neat_random_float(neat),0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		float genome_in2[8]={(float)i+neat_random_float(neat),1.0f+neat_random_float(neat),0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
 		float genome_out1;
 		float genome_out2;
 		neat_genome_evaluate(neat,genome,genome_in1,genome_in2,&genome_out1,&genome_out2);
@@ -22,7 +22,7 @@ float xor2_fitness_score_callback(neat_t* neat,const neat_genome_t* genome){
 		out+=diff*diff;
 	}
 	if (OPTIMIZE_SIZE&&out<0.25f){
-		return 1/(1+sqrtf(out))-0.06f*(expf(((genome->node_count>>3)-1)*0.75f)-1)-0.075f*genome->_enabled_node_count/((float)genome->node_count);
+		return 1/(1+sqrtf(out))-0.04f*genome->_enabled_node_count;
 	}
 	return 1/(1+sqrtf(out));
 }

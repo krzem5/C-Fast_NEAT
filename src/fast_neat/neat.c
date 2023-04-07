@@ -568,6 +568,7 @@ _mutate_random_edge:
 					child_edges+=8;
 					first_edges+=8;
 				}
+				child->_enabled_node_count+=(child->nodes+i)->enabled;
 			}
 		}
 		if (idx&31){

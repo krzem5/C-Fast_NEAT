@@ -22,7 +22,7 @@ float xor3_fitness_score_callback(neat_t* neat,const neat_genome_t* genome){
 		out+=diff*diff;
 	}
 	if (OPTIMIZE_SIZE&&out<0.25f){
-		return 1/(1+sqrtf(out))-0.06f*(expf(((genome->node_count>>3)-1)*0.75f)-1)-0.075f*genome->_enabled_node_count/((float)genome->node_count);
+		return 1/(1+sqrtf(out))-0.04f*genome->_enabled_node_count;
 	}
 	return 1/(1+sqrtf(out));
 }
