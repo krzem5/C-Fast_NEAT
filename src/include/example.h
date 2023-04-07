@@ -10,7 +10,7 @@ typedef struct _EXAMPLE{
 	unsigned int output_count;
 	unsigned int population;
 	float max_fitness_score;
-	float (*fitness_score_callback)(const neat_t*,const neat_genome_t*);
+	float (*fitness_score_callback)(neat_t*,const neat_genome_t*);
 	void (*end_callback)(const neat_t*,const neat_genome_t*);
 } example_t;
 

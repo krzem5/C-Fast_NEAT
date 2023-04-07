@@ -6,7 +6,7 @@
 
 
 
-#define DECLARE_EXAMPLE_FN(name) float name##_fitness_score_callback(const neat_t*,const neat_genome_t*);void name##_end_callback(const neat_t*,const neat_genome_t*)
+#define DECLARE_EXAMPLE_FN(name) float name##_fitness_score_callback(neat_t*,const neat_genome_t*);void name##_end_callback(const neat_t*,const neat_genome_t*)
 #define DECLARE_EXAMPLE(name,input_count,output_count,population,max_fitness_score) {#name,input_count,output_count,population,max_fitness_score,name##_fitness_score_callback,name##_end_callback}
 
 

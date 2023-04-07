@@ -8,7 +8,7 @@ static const char* names[3]={"rock","paper","scissors"};
 
 
 
-float rock_paper_scissors_fitness_score_callback(const neat_t* neat,const neat_genome_t* genome){
+float rock_paper_scissors_fitness_score_callback(neat_t* neat,const neat_genome_t* genome){
 	float out=0.0f;
 	for (unsigned int i=0;i<3;i++){
 		float genome_in[8]={i/2.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};

@@ -35,7 +35,6 @@ typedef struct _STATE{
 
 
 
-
 static void _init_state(state_t* out){
 	for (unsigned int i=0;i<4;i++){
 		out->raw[i]=example_random_uniform(MIN_START_VALUE-MAX_START_VALUE,MAX_START_VALUE-MIN_START_VALUE);
@@ -60,7 +59,7 @@ static void _update_state(state_t* state,float force){
 
 
 
-float cartpole_fitness_score_callback(const neat_t* neat,const neat_genome_t* genome){
+float cartpole_fitness_score_callback(neat_t* neat,const neat_genome_t* genome){
 	unsigned int out=0;
 	for (unsigned int i=0;i<SIMULATION_COUNT;i+=2){
 		state_t states[2];

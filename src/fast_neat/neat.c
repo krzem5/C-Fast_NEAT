@@ -695,3 +695,13 @@ _error:
 	fclose(file);
 	return 0;
 }
+
+
+
+float neat_random_float(neat_t* neat){
+	if (!neat->_prng_state.count){
+		_random_regenerate_bits(neat);
+	}
+	neat->_prng_state.count--;
+	return ((float)(((int32_t)(neat->_prng_state.data[neat->_prng_state.count]))>>7)*0x1p-24f)*0.015625f;
+}

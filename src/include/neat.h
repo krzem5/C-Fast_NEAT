@@ -33,7 +33,7 @@ typedef struct _NEAT_GENOME{
 
 
 
-typedef float (*neat_fitness_score_callback_t)(const struct _NEAT*,const neat_genome_t*);
+typedef float (*neat_fitness_score_callback_t)(struct _NEAT*,const neat_genome_t*);
 
 
 
@@ -120,6 +120,10 @@ void neat_deinit_model(const neat_model_t* model);
 
 
 _Bool neat_save_model(const neat_model_t* model,const char* file_path);
+
+
+
+float neat_random_float(neat_t* neat);
 
 
 

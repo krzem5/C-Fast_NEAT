@@ -4,7 +4,7 @@
 
 
 
-float xor2_fitness_score_callback(const neat_t* neat,const neat_genome_t* genome){
+float xor2_fitness_score_callback(neat_t* neat,const neat_genome_t* genome){
 	float out=0.0f;
 	for (unsigned int i=0;i<2;i++){
 		float genome_in1[8]={(float)i,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
