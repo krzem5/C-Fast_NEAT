@@ -704,6 +704,8 @@ _Bool neat_load_model(const char* file_path,neat_model_t* out){
 	if (!file){
 		return 0;
 	}
+	out->nodes=NULL;
+	out->edges=NULL;
 	neat_model_file_header_t header;
 	if (fread(&header,sizeof(header),1,file)!=1){
 		goto _error;
@@ -747,6 +749,10 @@ _Bool neat_load_model(const char* file_path,neat_model_t* out){
 	fclose(file);
 	return 1;
 _error:
+	free(out->nodes);
+	free(out->edges);
+	out->nodes=NULL;
+	out->edges=NULL;
 	fclose(file);
 	return 0;
 }
