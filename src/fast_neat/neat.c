@@ -699,6 +699,60 @@ _error:
 
 
 
+_Bool neat_load_model(const char* file_path,neat_model_t* out){
+	FILE* file=fopen(file_path,"wb");
+	if (!file){
+		return 0;
+	}
+	neat_model_file_header_t header;
+	if (fread(&header,sizeof(header),1,file)!=1){
+		goto _error;
+	}
+	out->input_count=header.input_count;
+	out->output_count=header.output_count;
+	out->node_count=header.node_count;
+	out->edge_count=header.edge_count;
+	out->nodes=malloc(out->node_count*sizeof(neat_model_node_t));
+	out->edges=malloc(out->node_count*out->node_count*sizeof(neat_model_edge_t));
+	neat_model_node_t* node=out->nodes;
+	neat_model_edge_t* edge=out->edges;
+	for (unsigned int i=0;i<out->node_count;i++){
+		for (unsigned int j=0;j<out->node_count;j++){
+			edge->weight=0.0f;
+			edge++;
+		}
+		node->bias=0.0f;
+		node->activation_function=ACTIVATION_FUNCTION_TYPE_TANH;
+		node->enabled=1;
+		node++;
+	}
+	node=out->nodes+out->input_count;
+	for (unsigned int i=out->input_count;i<out->node_count;i++){
+		neat_model_file_node_t node_data;
+		if (fread(&node_data,sizeof(neat_model_file_node_t),1,file)!=1){
+			goto _error;
+		}
+		node->bias=node_data.bias;
+		node->activation_function=node_data.activation_function;
+		node->enabled=node_data.enabled;
+		node++;
+	}
+	for (unsigned int i=0;i<out->edge_count;i++){
+		neat_model_file_edge_t edge_data;
+		if (fread(&edge_data,sizeof(neat_model_file_edge_t),1,file)!=1){
+			goto _error;
+		}
+		(out->edges+edge_data.index)->weight=edge_data.weight;
+	}
+	fclose(file);
+	return 1;
+_error:
+	fclose(file);
+	return 0;
+}
+
+
+
 float neat_random_float(neat_t* neat){
 	if (!neat->_prng_state.count){
 		_random_regenerate_bits(neat);

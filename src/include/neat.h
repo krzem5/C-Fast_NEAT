@@ -123,6 +123,10 @@ _Bool neat_save_model(const neat_model_t* model,const char* file_path);
 
 
 
+_Bool neat_load_model(const char* file_path,neat_model_t* out);
+
+
+
 float neat_random_float(neat_t* neat);
 
 
