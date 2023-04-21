@@ -127,6 +127,10 @@ _Bool neat_load_model(const char* file_path,neat_model_t* out);
 
 
 
+void neat_model_evaluate(const neat_model_t* model,const float* in1,const float* in2,float* out1,float* out2);
+
+
+
 float neat_random_float(neat_t* neat);
 
 
