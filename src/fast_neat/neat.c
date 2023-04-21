@@ -270,6 +270,8 @@ void neat_reset_genomes(neat_t* neat){
 	neat_genome_t* genome=neat->genomes;
 	neat_genome_node_t* node_data_ptr=neat->_node_data;
 	neat_genome_edge_t* edge_data_ptr=neat->_edge_data;
+	neat->_fitness_score_sum=0.0f;
+	neat->_last_best_genome_fitness=0.0f;
 	for (unsigned int i=0;i<neat->population;i++){
 		genome->node_count=node_count;
 		genome->fitness_score=0.0f;
@@ -290,10 +292,13 @@ void neat_reset_genomes(neat_t* neat){
 		}
 		node_data_ptr+=MAX_NODE_COUNT-node_count;
 		edge_data_ptr+=(MAX_NODE_COUNT-node_count)*(MAX_NODE_COUNT-node_count);
+		genome->fitness_score=neat->fitness_score_callback(neat,genome);
+		neat->_fitness_score_sum+=genome->fitness_score;
+		if (!i||neat->_last_best_genome_fitness<genome->fitness_score){
+			neat->_last_best_genome_fitness=genome->fitness_score;
+		}
 		genome++;
 	}
-	neat->_fitness_score_sum=0.0f;
-	neat->_last_best_genome_fitness=0.0f;
 	neat->stale_iteration_count=0;
 }
 
