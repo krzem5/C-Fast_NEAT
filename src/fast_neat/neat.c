@@ -410,9 +410,11 @@ float neat_update(neat_t* neat){
 	neat_genome_t* end_genome=neat->genomes+neat->population;
 	neat_genome_t* genome=start_genome;
 	float best_genome_fitness=neat->genomes->fitness_score;
+	unsigned int best_genome_index=0xffffffff;
 	for (unsigned int i=0;i<neat->population;i++){
 		if (genome->fitness_score>best_genome_fitness){
 			best_genome_fitness=genome->fitness_score;
+			best_genome_index=0xffffffff;
 		}
 		if (genome->fitness_score>=average){
 			if (start_genome==genome){
@@ -422,6 +424,9 @@ float neat_update(neat_t* neat){
 				__m256i tmp=_mm256_load_si256((const __m256i*)genome);
 				_mm256_store_si256((__m256i*)genome,_mm256_load_si256((const __m256i*)start_genome));
 				_mm256_store_si256((__m256i*)start_genome,tmp);
+			}
+			if (best_genome_index==0xffffffff){
+				best_genome_index=start_genome-neat->genomes;
 			}
 			start_genome++;
 		}
@@ -435,9 +440,15 @@ float neat_update(neat_t* neat){
 				_mm256_store_si256((__m256i*)genome,_mm256_load_si256((const __m256i*)end_genome));
 				_mm256_store_si256((__m256i*)end_genome,tmp);
 			}
+			if (best_genome_index==0xffffffff){
+				best_genome_index=end_genome-neat->genomes;
+			}
 		}
 	}
 	if (stale||start_genome==neat->genomes){
+		__m256i tmp=_mm256_load_si256((const __m256i*)(neat->genomes+best_genome_index));
+		_mm256_store_si256((__m256i*)(neat->genomes+best_genome_index),_mm256_load_si256((const __m256i*)(neat->genomes)));
+		_mm256_store_si256((__m256i*)(neat->genomes),tmp);
 		start_genome=neat->genomes+1;
 	}
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
@@ -597,6 +608,11 @@ _mutate_random_edge:
 	else{
 		neat->stale_iteration_count=0;
 		neat->_last_best_genome_fitness=best_genome_fitness;
+	}
+	for (unsigned int i=0;i<neat->population;i++){
+		if ((neat->genomes+i)->fitness_score>best_genome_fitness){
+			best_genome_fitness=(neat->genomes+i)->fitness_score;
+		}
 	}
 	return best_genome_fitness;
 }
