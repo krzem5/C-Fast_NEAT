@@ -4,10 +4,6 @@
 
 
 
-#define OPTIMIZE_SIZE 1
-
-
-
 static const char* names[3]={"rock","paper","scissors"};
 
 
@@ -20,9 +16,6 @@ float rock_paper_scissors_fitness_score_callback(neat_t* neat,const neat_genome_
 		neat_genome_evaluate(neat,genome,genome_in,genome_in,&genome_out,&genome_out);
 		float diff=genome_out*0.5f+0.5f-((i+1)%3)/2.0f;
 		out+=diff*diff;
-	}
-	if (OPTIMIZE_SIZE&&out<0.25f){
-		return 1/(1+sqrtf(out))-0.04f*genome->_enabled_node_count;
 	}
 	return 1/(1+sqrtf(out));
 }

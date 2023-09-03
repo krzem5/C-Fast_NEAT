@@ -442,14 +442,14 @@ float neat_update(neat_t* neat){
 	}
 	unsigned int surviving_genome_count=(unsigned int)(start_genome-neat->genomes);
 	neat_genome_t* child=neat->genomes+surviving_genome_count;
-	_random_ensure_count(neat,1);
-	unsigned int mutation_type=_random_uint32(neat);
+	_random_ensure_count(neat,4);
+	unsigned int first_crossover_index=(stale?neat->population:surviving_genome_count+_random_uint(neat,neat->population-surviving_genome_count));
 	for (unsigned int idx=surviving_genome_count;idx<neat->population;idx++){
 		_random_ensure_count(neat,4);
 		const neat_genome_t* random_genome=neat->genomes+_random_uint(neat,surviving_genome_count);
 		child->node_count=random_genome->node_count;
 		child->_node_count_sq=random_genome->_node_count_sq;
-		if (stale||(mutation_type&1)){
+		if (idx<first_crossover_index){
 			child->_enabled_node_count=random_genome->_enabled_node_count;
 			unsigned int action=_random_uint32(neat)&MUTATION_ACTION_MASK;
 			if (action<=MUTATION_ACTION_TYPE_ADD_NODES&&random_genome->node_count<MAX_ALLOWED_NODE_COUNT){
@@ -581,13 +581,6 @@ _mutate_random_edge:
 				}
 				child->_enabled_node_count+=(child->nodes+i)->enabled;
 			}
-		}
-		if (idx&31){
-			mutation_type>>=1;
-		}
-		else{
-			_random_ensure_count(neat,1);
-			mutation_type=_random_uint32(neat);
 		}
 		neat->_fitness_score_sum-=child->fitness_score;
 		child->fitness_score=neat->fitness_score_callback(neat,child);
